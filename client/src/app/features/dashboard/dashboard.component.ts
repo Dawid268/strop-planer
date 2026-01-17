@@ -1,0 +1,231 @@
+import { Component, inject, OnInit } from "@angular/core";
+import { CommonModule, DecimalPipe } from "@angular/common";
+import { RouterLink } from "@angular/router";
+import { CardModule } from "primeng/card";
+import { ButtonModule } from "primeng/button";
+import { ListboxModule } from "primeng/listbox";
+import { DividerModule } from "primeng/divider";
+import { ProgressSpinnerModule } from "primeng/progressspinner";
+import { SkeletonModule } from "primeng/skeleton";
+import { DashboardStore } from "./store/dashboard.store";
+
+@Component({
+  selector: "app-dashboard",
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterLink,
+    CardModule,
+    ButtonModule,
+    ListboxModule,
+    DividerModule,
+    ProgressSpinnerModule,
+    SkeletonModule,
+    DecimalPipe,
+  ],
+  template: `
+    <div class="dashboard p-4 max-w-screen-xl mx-auto">
+      <header class="dashboard-header mb-5">
+        <h1 class="text-3xl font-medium text-900 m-0">
+          Witaj w Szalunki Optimizer!
+        </h1>
+        <p class="text-600 mt-2">Panel zarządzania szalunkami stropowymi</p>
+      </header>
+
+      <!-- Stats Cards -->
+      <div class="grid mb-5">
+        @if (store.loading()) {
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="col-12 md:col-6 lg:col-3">
+              <p-card class="stat-card shadow-1">
+                <div class="flex align-items-center gap-3">
+                  <p-skeleton size="4rem" borderRadius="12px"></p-skeleton>
+                  <div class="flex-grow-1">
+                    <p-skeleton width="30%" styleClass="mb-2"></p-skeleton>
+                    <p-skeleton width="60%"></p-skeleton>
+                  </div>
+                </div>
+              </p-card>
+            </div>
+          }
+        } @else {
+          <div class="col-12 md:col-6 lg:col-3">
+            <p-card class="stat-card shadow-1 border-none">
+              <div class="flex align-items-center gap-3">
+                <div
+                  class="stat-icon projects p-3 border-round-xl bg-blue-50 text-blue-600"
+                >
+                  <i class="pi pi-folder text-3xl"></i>
+                </div>
+                <div class="stat-content flex flex-column">
+                  <span class="stat-value text-2xl font-bold text-900">{{
+                    store.projectStats()?.totalProjects || 0
+                  }}</span>
+                  <span class="stat-label text-600 text-sm">Projekty</span>
+                </div>
+              </div>
+            </p-card>
+          </div>
+
+          <div class="col-12 md:col-6 lg:col-3">
+            <p-card class="stat-card shadow-1 border-none">
+              <div class="flex align-items-center gap-3">
+                <div
+                  class="stat-icon inventory p-3 border-round-xl bg-green-50 text-green-600"
+                >
+                  <i class="pi pi-box text-3xl"></i>
+                </div>
+                <div class="stat-content flex flex-column">
+                  <span class="stat-value text-2xl font-bold text-900">{{
+                    store.inventorySummary()?.totalItems || 0
+                  }}</span>
+                  <span class="stat-label text-600 text-sm">Magazyn</span>
+                </div>
+              </div>
+            </p-card>
+          </div>
+
+          <div class="col-12 md:col-6 lg:col-3">
+            <p-card class="stat-card shadow-1 border-none">
+              <div class="flex align-items-center gap-3">
+                <div
+                  class="stat-icon completed p-3 border-round-xl bg-orange-50 text-orange-600"
+                >
+                  <i class="pi pi-check-circle text-3xl"></i>
+                </div>
+                <div class="stat-content flex flex-column">
+                  <span class="stat-value text-2xl font-bold text-900">{{
+                    store.projectStats()?.completedCount || 0
+                  }}</span>
+                  <span class="stat-label text-600 text-sm">Zakończone</span>
+                </div>
+              </div>
+            </p-card>
+          </div>
+
+          <div class="col-12 md:col-6 lg:col-3">
+            <p-card class="stat-card shadow-1 border-none">
+              <div class="flex align-items-center gap-3">
+                <div
+                  class="stat-icon area p-3 border-round-xl bg-purple-50 text-purple-600"
+                >
+                  <i class="pi pi-map text-3xl"></i>
+                </div>
+                <div class="stat-content flex flex-column">
+                  <span class="stat-value text-2xl font-bold text-900">
+                    {{ store.projectStats()?.totalArea || 0 | number: "1.0-0" }}
+                    m²
+                  </span>
+                  <span class="stat-label text-600 text-sm"
+                    >Łączna powierzchnia</span
+                  >
+                </div>
+              </div>
+            </p-card>
+          </div>
+        }
+      </div>
+
+      <!-- Main Content -->
+      <div class="grid">
+        <!-- Quick Actions -->
+        <div class="col-12 lg:col-4">
+          <p-card header="Szybkie akcje" class="h-full shadow-2">
+            <div class="flex flex-column gap-3">
+              <button
+                pButton
+                label="Nowy projekt"
+                icon="pi pi-plus"
+                routerLink="/projects"
+                [queryParams]="{ new: true }"
+                class="w-full"
+              ></button>
+              <button
+                pButton
+                label="Magazyn"
+                icon="pi pi-box"
+                routerLink="/inventory"
+                class="p-button-outlined w-full"
+              ></button>
+            </div>
+          </p-card>
+        </div>
+
+        <!-- Recent Projects -->
+        <div class="col-12 lg:col-8">
+          <p-card class="h-full shadow-2">
+            <ng-template pTemplate="header">
+              <div
+                class="flex align-items-center justify-content-between p-3 border-bottom-1 border-100"
+              >
+                <span class="text-xl font-bold">Ostatnie projekty</span>
+                <p-button
+                  label="Zobacz wszystkie"
+                  [text]="true"
+                  routerLink="/projects"
+                ></p-button>
+              </div>
+            </ng-template>
+
+            @if (!store.loading() && store.recentProjects().length === 0) {
+              <div
+                class="flex flex-column align-items-center justify-content-center p-5 text-600"
+              >
+                <i class="pi pi-folder-open text-6xl opacity-20 mb-3"></i>
+                <p class="m-0 mb-3 text-lg">Brak projektów</p>
+                <button
+                  pButton
+                  label="Utwórz pierwszy projekt"
+                  icon="pi pi-plus"
+                  routerLink="/projects"
+                  [queryParams]="{ new: true }"
+                  class="p-button-sm"
+                ></button>
+              </div>
+            } @else {
+              <div class="flex flex-column">
+                @for (project of store.recentProjects(); track project.id) {
+                  <a
+                    [routerLink]="['/projects', project.id]"
+                    class="flex align-items-center p-3 gap-3 no-underline text-900 hover:surface-100 border-round transition-colors transition-duration-150"
+                  >
+                    <div
+                      class="p-2 border-round-circle bg-gray-100 text-gray-600"
+                    >
+                      <i class="pi pi-file"></i>
+                    </div>
+                    <div class="flex flex-column">
+                      <span class="font-bold">{{ project.name }}</span>
+                      <small class="text-600">
+                        {{ project.slabArea | number: "1.0-0" }} m² •
+                        {{ project.status }}
+                      </small>
+                    </div>
+                    <i class="pi pi-chevron-right ml-auto text-400"></i>
+                  </a>
+                  @if (!$last) {
+                    <p-divider styleClass="m-0"></p-divider>
+                  }
+                }
+              </div>
+            }
+          </p-card>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [
+    `
+      .no-underline {
+        text-underline-offset: unset;
+        text-decoration: none;
+      }
+      ::ng-deep .stat-card .p-card-body {
+        padding: 0 !important;
+      }
+    `,
+  ],
+})
+export class DashboardComponent {
+  protected readonly store = inject(DashboardStore);
+}

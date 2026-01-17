@@ -1,0 +1,37 @@
+# Common
+node_modules
+dist
+tmp
+out-tsc
+bazel-out
+.idea
+.vscode
+.history
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular
+.angular/cache
+coverage
+
+# NestJS / Backend
+upload_backups
+*.sqlite
+data/*.db
+data/*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+.env
+
+# Project specific
+uploads/converted/*
+!uploads/converted/.gitkeep

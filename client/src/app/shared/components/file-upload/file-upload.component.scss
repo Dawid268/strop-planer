@@ -1,0 +1,19 @@
+.file-upload {
+  width: 100%;
+}
+
+.drop-zone {
+  &.has-files {
+    cursor: default;
+  }
+}
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+::ng-deep .file-item {
+  border: 1px solid var(--surface-200);
+}
