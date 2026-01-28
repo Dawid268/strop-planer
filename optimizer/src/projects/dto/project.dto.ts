@@ -136,8 +136,27 @@ export class UpdateProjectDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsString()
   public optimizationResult?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  public extractedSlabGeometry?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  public geoJsonPath?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  public svgPath?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  public dxfPath?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

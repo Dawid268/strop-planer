@@ -64,6 +64,8 @@ export interface FormworkElement {
   positionX?: number;
   /** Pozycja Y na rysunku [m] */
   positionY?: number;
+  /** Rotacja elementu [stopnie] */
+  rotation?: number;
   /** Szczegóły specyficzne dla typu */
   details:
     | FormworkPanel

@@ -8,6 +8,17 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  IsObject,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { FormworkService } from './formwork.service';
 import type {
   FormworkLayout,
@@ -16,38 +27,108 @@ import type {
 } from './interfaces/formwork.interface';
 import type { SlabData } from '../slab/interfaces/slab.interface';
 
+class DimensionsDto {
+  @IsNumber()
+  length!: number;
+
+  @IsNumber()
+  width!: number;
+
+  @IsNumber()
+  thickness!: number;
+
+  @IsNumber()
+  area!: number;
+}
+
+class AxesDto {
+  @IsArray()
+  @IsString({ each: true })
+  horizontal!: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  vertical!: string[];
+}
+
+class PointDto {
+  @IsNumber()
+  x!: number;
+
+  @IsNumber()
+  y!: number;
+}
+
 class CalculateFormworkDto implements FormworkCalculationParams {
+  @IsNumber()
   public slabArea!: number;
+
+  @IsNumber()
   public slabThickness!: number;
+
+  @IsNumber()
   public floorHeight!: number;
+
+  @IsOptional()
+  @IsString()
   public preferredSystem?:
     | 'PERI_SKYDECK'
     | 'DOKA_DOKAFLEX'
     | 'ULMA_ENKOFLEX'
     | 'MEVA'
     | 'CUSTOM';
+
+  @IsOptional()
+  @IsNumber()
   public maxBudget?: number;
+
+  @IsBoolean()
   public includeBeams!: boolean;
+
+  @IsOptional()
+  @IsNumber()
   public additionalLoad?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  public optimizeForWarehouse?: boolean;
 }
 
 class SlabDataDto {
+  @IsString()
   public id!: string;
-  public dimensions!: {
-    length: number;
-    width: number;
-    thickness: number;
-    area: number;
-  };
+
+  @ValidateNested()
+  @Type(() => DimensionsDto)
+  public dimensions!: DimensionsDto;
+
+  @IsString()
   public type!: 'monolityczny' | 'teriva' | 'filigran' | 'zerowiec' | 'inny';
-  public beams!: [];
-  public reinforcement!: [];
-  public axes!: { horizontal: string[]; vertical: string[] };
-  public points?: Array<{ x: number; y: number }>;
+
+  @IsArray()
+  public beams!: any[];
+
+  @IsArray()
+  public reinforcement!: any[];
+
+  @ValidateNested()
+  @Type(() => AxesDto)
+  public axes!: AxesDto;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PointDto)
+  public points?: PointDto[];
 }
 
 class CalculateRequestDto {
+  @ValidateNested()
+  @Type(() => SlabDataDto)
   public slabData!: SlabDataDto;
+
+  @ValidateNested()
+  @Type(() => CalculateFormworkDto)
   public params!: CalculateFormworkDto;
 }
 

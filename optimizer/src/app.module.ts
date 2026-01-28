@@ -26,7 +26,7 @@ import { FloorPlanModule } from './floor-plan/floor-plan.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
-      database: 'data/szalunki.db',
+      database: join(process.cwd(), 'data', 'szalunki.db'),
       entities: [
         InventoryItemEntity,
         UserEntity,

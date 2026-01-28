@@ -155,100 +155,100 @@ export class FormworkService {
   }
 
   /**
-   * Calculates panels using a grid layout strategy on the polygon
+   * Calculates panels using grid-based full coverage.
+   * Panels are placed in a regular grid covering the entire slab.
+   * Only 0° or 90° rotation is allowed.
    */
   private calculatePanelsForPolygon(
     points: Array<{ x: number; y: number }>,
     availablePanels: FormworkPanel[],
     inventoryState: InventoryItem[],
   ): { elements: FormworkElement[]; totalWeight: number; totalCost: number } {
+    if (availablePanels.length === 0)
+      return { elements: [], totalWeight: 0, totalCost: 0 };
+
+    // Use the largest panel for grid sizing
+    const sortedPanels = [...availablePanels].sort((a, b) => b.area - a.area);
+    const primaryPanel = sortedPanels[0];
+
+    // Get bounding box
+    const bbox = this.getBoundingBox(points);
+    const slabWidth = bbox.maxX - bbox.minX;
+    const slabHeight = bbox.maxY - bbox.minY;
+
     const elements: FormworkElement[] = [];
     let totalWeight = 0;
     let totalCost = 0;
 
-    // 1. Sort panels by size (largest first)
-    const sortedPanels = [...availablePanels].sort((a, b) => b.area - a.area);
-    if (sortedPanels.length === 0) return { elements, totalWeight, totalCost };
-
-    // 2. Identify Bounding Box
-    const xs = points.map((p) => p.x);
-    const ys = points.map((p) => p.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-
-    // 3. Grid Strategy
-    // We try to place the largest possible panel at every grid position within the bounds
-    // This is a simplified "Packing" algorithm.
-    // For a real production system, we would need a proper nesting library.
-    // Here we use a 50cm grid step (common module)
-
-    const GRID_STEP = 50; // cm
-    const placedRects: Array<{
-      x: number;
-      y: number;
-      w: number;
-      h: number;
-    }> = [];
-
-    // Temporary inventory tracker
+    const placedRects: Array<{ x: number; y: number; w: number; h: number }> =
+      [];
     const inventoryCounts = new Map<string, number>();
     inventoryState.forEach((i) =>
       inventoryCounts.set(i.catalogCode, i.quantityAvailable),
     );
 
-    // Iterate through the bounding box
-    for (let y = minY; y < maxY; y += GRID_STEP) {
-      for (let x = minX; x < maxX; x += GRID_STEP) {
-        // Skip if this spot is already covered by a placed panel
-        if (
-          placedRects.some(
-            (r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h,
-          )
-        ) {
+    // Determine best panel orientation for this slab
+    // Try to maximize coverage by aligning with longer slab dimension
+    const panelW =
+      slabWidth >= slabHeight ? primaryPanel.length : primaryPanel.width;
+    const panelH =
+      slabWidth >= slabHeight ? primaryPanel.width : primaryPanel.length;
+    const rotation = slabWidth >= slabHeight ? 0 : 90;
+
+    // Calculate number of panels needed
+    const numCols = Math.ceil(slabWidth / panelW);
+    const numRows = Math.ceil(slabHeight / panelH);
+
+    // Place panels in grid
+    for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
+        const x = bbox.minX + col * panelW;
+        const y = bbox.minY + row * panelH;
+        const centerX = x + panelW / 2;
+        const centerY = y + panelH / 2;
+
+        // Check if panel center is inside the slab polygon
+        if (!this.isPointInPolygon(centerX, centerY, points)) {
           continue;
         }
 
-        // Try to place the largest panel that fits
-        for (const panel of sortedPanels) {
-          const w = panel.length; // Assume oriented horizontally first
-          const h = panel.width;
+        // Check inventory
+        const currentStock = inventoryCounts.get(primaryPanel.id) || 0;
+        if (currentStock <= 0) continue;
 
-          // Check available inventory
-          const currentStock = inventoryCounts.get(panel.id) || 0;
-          if (currentStock <= 0) continue;
-
-          // Check if panel fits inside polygon (all 4 corners)
-          // And doesn't overlap others
-          if (
-            this.isRectInPolygon(x, y, w, h, points) &&
-            !this.isOverlapping(x, y, w, h, placedRects)
-          ) {
-            // PLACED!
-            elements.push({
-              elementType: 'panel',
-              name: panel.id,
-              quantity: 1,
-              positionX: x / 100, // Convert cm to m for API
-              positionY: y / 100,
-              details: panel,
-            });
-
-            placedRects.push({ x, y, w, h });
-            inventoryCounts.set(panel.id, currentStock - 1);
-            totalWeight += panel.weight;
-            totalCost += (panel.dailyRentCost || 0) * 30;
-            break; // Move to next grid pos
-          }
+        // Check overlap with already placed panels
+        if (this.isOverlapping(x, y, panelW, panelH, placedRects)) {
+          continue;
         }
+
+        elements.push({
+          elementType: 'panel',
+          name: primaryPanel.id,
+          quantity: 1,
+          positionX: centerX / 100, // Convert to meters
+          positionY: centerY / 100,
+          rotation: rotation,
+          details: primaryPanel,
+        });
+
+        placedRects.push({ x, y, w: panelW, h: panelH });
+        inventoryCounts.set(primaryPanel.id, currentStock - 1);
+        totalWeight += primaryPanel.weight;
+        totalCost += (primaryPanel.dailyRentCost || 0) * 30;
       }
     }
 
+    return { elements, totalWeight, totalCost };
+  }
+
+  private getBoundingBox(points: Array<{ x: number; y: number }>) {
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
     return {
-      elements, // Return individual placed elements with positions
-      totalWeight,
-      totalCost,
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys),
     };
   }
 
@@ -377,10 +377,22 @@ export class FormworkService {
 
     // Dobierz stojak o odpowiedniej wysokości
     const requiredHeight = floorHeight - slabThickness;
+
+    // Default prop when inventory is empty
+    const defaultProp: FormworkProp = {
+      type: 'eurostempel',
+      minHeight: 200,
+      maxHeight: 350,
+      loadCapacity: 20000,
+      weight: 15,
+    };
+
     const suitableProp =
       availableProps.find(
         (p) => p.minHeight <= requiredHeight && p.maxHeight >= requiredHeight,
-      ) || availableProps[0];
+      ) ||
+      availableProps[0] ||
+      defaultProp;
 
     // Standardowy rozstaw podpór: 1.0-1.5m w obu kierunkach
     const propSpacing = 1.2; // m
@@ -421,8 +433,16 @@ export class FormworkService {
     const elements: FormworkElement[] = [];
     let totalWeight = 0;
 
+    // Default beam when inventory is empty
+    const defaultBeam: FormworkBeam = {
+      type: 'H20',
+      length: 240,
+      supportSpacing: 150,
+      bendingCapacity: 6.0,
+    };
+
     // Dźwigary główne (wzdłuż krótszego wymiaru)
-    const primaryBeam = availableBeams[0];
+    const primaryBeam = availableBeams[0] || defaultBeam;
     const primarySpacing = 0.5; // m
     const primaryCount = Math.ceil(length / primarySpacing);
 

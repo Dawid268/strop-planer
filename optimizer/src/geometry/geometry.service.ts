@@ -116,8 +116,7 @@ export class GeometryService {
         status: 'processing',
         message: 'Analyzing Geometry (Python)...',
       });
-      const scriptPath =
-        '/run/media/dawid/Linux_Projekty/szalunki-optimizer/src/scripts/extract_geometry.py';
+      const scriptPath = path.join(this.scriptsPath, 'extract_geometry.py');
       // Python script expects SVG path
       const pythonCmd = `python3 "${scriptPath}" "${validSvgPath}"`;
       this.logger.log(`Executing: ${pythonCmd}`);
