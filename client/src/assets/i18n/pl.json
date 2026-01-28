@@ -11,6 +11,8 @@
     "loading": "Ładowanie...",
     "error": "Wystąpił błąd",
     "success": "Sukces",
+    "warning": "Ostrzeżenie",
+    "optional": "opcjonalnie",
     "yes": "Tak",
     "no": "Nie",
     "back": "Wstecz",
@@ -68,6 +70,7 @@
   },
   "projects": {
     "title": "Projekty",
+    "subtitle": "Zarządzaj projektami szalunków stropowych",
     "newProject": "Nowy projekt",
     "editProject": "Edytuj projekt",
     "projectName": "Nazwa projektu",
@@ -84,17 +87,47 @@
     "deleteProject": "Usuń projekt",
     "confirmDelete": "Czy na pewno chcesz usunąć ten projekt?",
     "noProjects": "Brak projektów",
-    "noProjectsDesc": "Utwórz swój pierwszy projekt szalunkowy",
+    "noProjectsDesc": "Utwórz swój pierwszy projekt, aby rozpocząć optymalizację szalunków.",
+    "createFirstProject": "Utwórz projekt",
+    "new": {
+      "fileProcessing": "Przetwarzanie pliku...",
+      "clickToChange": "Kliknij, aby zmienić plik",
+      "dragDrop": "Przeciągnij plik PDF lub kliknij",
+      "supportedFormats": "Obsługiwane formaty: PDF",
+      "namePlaceholder": "np. Budynek mieszkalny A",
+      "status": {
+        "creating": "Tworzenie projektu...",
+        "extracting": "Generowanie geometrii (Auto-Trace)...",
+        "ready": "Gotowe!"
+      },
+      "errors": {
+        "uploadFailed": "Błąd przesyłania pliku",
+        "nameRequired": "Nazwa projektu jest wymagana",
+        "extractionFailed": "Błąd generowania geometrii",
+        "creationFailed": "Błąd tworzenia projektu. Sprawdź połączenie.",
+        "saveFailed": "Błąd zapisu"
+      }
+    },
     "status": {
       "draft": "Szkic",
-      "calculated": "Obliczony",
-      "optimized": "Zoptymalizowany",
+      "calculated": "Obliczono",
+      "optimized": "Zoptymalizowano",
+      "sent": "Wysłano",
       "completed": "Zakończony"
+    },
+    "table": {
+      "name": "Nazwa projektu",
+      "status": "Status",
+      "area": "Powierzchnia",
+      "updated": "Aktualizacja"
     },
     "tabs": {
       "importFiles": "Import z plików",
       "manualEntry": "Wprowadź ręcznie"
-    }
+    },
+    "confirmDeleteHeader": "Potwierdzenie usunięcia",
+    "confirmDeleteButton": "Tak, usuń",
+    "cancel": "Anuluj"
   },
   "fileUpload": {
     "title": "Wrzuć pliki projektu",
@@ -126,8 +159,11 @@
   },
   "inventory": {
     "title": "Magazyn",
+    "subtitle": "Zarządzaj stanem magazynowym elementów szalunkowych",
+    "exportCsv": "Eksport CSV",
     "addItem": "Dodaj element",
     "editItem": "Edytuj element",
+    "searchPlaceholder": "Szukaj po nazwie...",
     "itemName": "Nazwa",
     "itemType": "Typ",
     "manufacturer": "Producent",
@@ -152,19 +188,56 @@
     }
   },
   "editor": {
-    "title": "Edytor projektu",
-    "tools": "Narzędzia",
-    "layers": "Warstwy",
-    "properties": "Właściwości",
-    "calculate": "Oblicz",
-    "optimize": "Optymalizuj",
-    "export": "Eksportuj",
-    "import": "Importuj",
-    "zoomIn": "Przybliż",
-    "zoomOut": "Oddal",
-    "fitToScreen": "Dopasuj do ekranu",
-    "undo": "Cofnij",
-    "redo": "Ponów"
+    "redo": "Ponów",
+    "selected": "Zaznaczono",
+    "layers": {
+      "slab": "Strop",
+      "beams": "Belki",
+      "formwork": "Szalunki",
+      "annotations": "Adnotacje"
+    },
+    "sidebar": {
+      "layers": "Warstwy",
+      "properties": "Właściwości",
+      "catalog": "Katalog",
+      "visibility": "Widoczność",
+      "lock": "Zablokuj",
+      "unlock": "Odblokuj",
+      "noSelection": "Brak zaznaczenia",
+      "propType": "Typ",
+      "propRotation": "Rotacja",
+      "selectedCount": "Zaznaczono {{count}} elementów"
+    },
+    "tools": {
+      "select": "Zaznacz (V)",
+      "pan": "Przesuń widok (H)",
+      "addPanel": "Dodaj panel szalunkowy (P)",
+      "addProp": "Dodaj podporę (S)",
+      "drawBeam": "Rysuj belkę (B)",
+      "drawPolygon": "Rysuj strop (Wielokąt)",
+      "traceSlab": "Obrysuj Strop (Marker z Snappingiem - M)"
+    },
+    "viewModes": {
+      "full": "Pełny Plan",
+      "slab": "Szalunek (Izolacja)"
+    },
+    "actions": {
+      "autoLayout": "Auto-Rozmieść (Generuj)",
+      "autoTrace": "Auto-Trace PDF (Wektoryzacja)",
+      "zoomIn": "Przybliż",
+      "zoomOut": "Oddal",
+      "fitToScreen": "Dopasuj do ekranu",
+      "toggleGrid": "Pokaż/ukryj siatkę",
+      "toggleSnap": "Przyciągaj do siatki (G)",
+      "rotateLeft": "Obróć w lewo 90°",
+      "rotateRight": "Obróć w prawo 90°",
+      "exportSelected": "Eksportuj do nowej karty",
+      "generateOptimal": "Generuj Optymalny Szalunek"
+    },
+    "tooltips": {
+      "exportSelected": "Eksportuj zaznaczony element",
+      "generateOptimal": "Rozmieść szalunki uwględniając stany magazynowe"
+    }
   },
   "errors": {
     "generic": "Wystąpił błąd. Spróbuj ponownie.",

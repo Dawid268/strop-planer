@@ -7,7 +7,7 @@ export const routes: Routes = [
     path: "login",
     loadComponent: () =>
       import("./features/auth/components/login.component").then(
-        (m) => m.LoginComponent
+        (m) => m.LoginComponent,
       ),
     canActivate: [guestGuard],
   },
@@ -15,7 +15,7 @@ export const routes: Routes = [
     path: "register",
     loadComponent: () =>
       import("./features/auth/components/register.component").then(
-        (m) => m.RegisterComponent
+        (m) => m.RegisterComponent,
       ),
     canActivate: [guestGuard],
   },
@@ -25,7 +25,7 @@ export const routes: Routes = [
     path: "",
     loadComponent: () =>
       import("./shared/components/app-shell/app-shell.component").then(
-        (m) => m.AppShellComponent
+        (m) => m.AppShellComponent,
       ),
     canActivate: [authGuard],
     children: [
@@ -38,49 +38,49 @@ export const routes: Routes = [
         path: "dashboard",
         loadComponent: () =>
           import("./features/dashboard/dashboard.component").then(
-            (m) => m.DashboardComponent
+            (m) => m.DashboardComponent,
           ),
       },
       {
         path: "projects",
         loadComponent: () =>
-          import("./features/projects/projects-list.component").then(
-            (m) => m.ProjectsListComponent
+          import("./features/projects/pages/projects-list").then(
+            (m) => m.ProjectsListComponent,
           ),
       },
       {
         path: "projects/:id",
         loadComponent: () =>
-          import(
-            "./features/projects/pages/project-overview/project-overview.component"
-          ).then((m) => m.ProjectOverviewComponent),
+          import("./features/projects/pages/project-overview/project-overview.component").then(
+            (m) => m.ProjectOverviewComponent,
+          ),
       },
       {
         path: "projects/:id/editor",
         loadComponent: () =>
-          import("./features/editor/editor-page.component").then(
-            (m) => m.EditorPageComponent
+          import("./features/editor/pages/editor-page").then(
+            (m) => m.EditorPageComponent,
           ),
       },
       {
         path: "inventory",
         loadComponent: () =>
           import("./features/inventory/inventory-page.component").then(
-            (m) => m.InventoryPageComponent
+            (m) => m.InventoryPageComponent,
           ),
       },
       {
         path: "dxf-viewer",
         loadComponent: () =>
-          import(
-            "./features/floor-plan/components/floor-plan-dxf-viewer/floor-plan-dxf-viewer.component"
-          ).then((m) => m.FloorPlanDxfViewerComponent),
+          import("./features/floor-plan/components/floor-plan-dxf-viewer/floor-plan-dxf-viewer.component").then(
+            (m) => m.FloorPlanDxfViewerComponent,
+          ),
       },
       {
         path: "settings",
         loadComponent: () =>
           import("./features/settings/settings-page.component").then(
-            (m) => m.SettingsPageComponent
+            (m) => m.SettingsPageComponent,
           ),
       },
     ],

@@ -1,0 +1,9 @@
+@use "sass:color";
+
+.editor-toolbar {
+  z-index: 100;
+}
+
+::ng-deep .tool-group .p-button {
+  padding: 0.5rem;
+}

@@ -4,7 +4,6 @@ import {
   provideHttpClientTesting,
 } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { provideZonelessChangeDetection } from "@angular/core";
 import { InventoryApiService } from "./inventory-api.service";
 import { environment } from "../../../../environments/environment";
 import type {
@@ -26,15 +25,13 @@ describe("InventoryApiService", () => {
     manufacturer: "PERI",
     system: "SKYDECK",
     dimensions: "150x75cm",
-    quantity: 100,
-    available: 80,
-    reserved: 20,
+    quantityAvailable: 100,
+    quantityReserved: 20,
   };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        provideZonelessChangeDetection(),
         InventoryApiService,
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -81,7 +78,7 @@ describe("InventoryApiService", () => {
           request.url === API_URL &&
           request.params.get("type") === "panel" &&
           request.params.get("system") === "SKYDECK" &&
-          request.params.get("manufacturer") === "PERI"
+          request.params.get("manufacturer") === "PERI",
       );
       expect(req.request.method).toBe("GET");
       req.flush([mockItem]);
@@ -150,7 +147,7 @@ describe("InventoryApiService", () => {
         manufacturer: "DOKA",
         system: "Dokaflex",
         dimensions: "100x50cm",
-        quantity: 50,
+        quantityAvailable: 50,
       };
 
       service.create(createDto).subscribe((item) => {
@@ -170,7 +167,7 @@ describe("InventoryApiService", () => {
     });
 
     it("should send PUT to /inventory/:id with dto", () => {
-      const updateDto: UpdateInventoryItemDto = { quantity: 150 };
+      const updateDto: UpdateInventoryItemDto = { quantityAvailable: 150 };
 
       service.update("item-1", updateDto).subscribe((item) => {
         expect(item).toBeDefined();
@@ -179,7 +176,7 @@ describe("InventoryApiService", () => {
       const req = httpMock.expectOne(`${API_URL}/item-1`);
       expect(req.request.method).toBe("PUT");
       expect(req.request.body).toEqual(updateDto);
-      req.flush({ ...mockItem, quantity: 150 });
+      req.flush({ ...mockItem, quantityAvailable: 150 });
     });
   });
 
@@ -210,7 +207,7 @@ describe("InventoryApiService", () => {
       const req = httpMock.expectOne(`${API_URL}/item-1/reserve`);
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toEqual({ quantity: 10 });
-      req.flush({ ...mockItem, reserved: 30 });
+      req.flush({ ...mockItem, quantityReserved: 30 });
     });
   });
 
@@ -227,7 +224,7 @@ describe("InventoryApiService", () => {
       const req = httpMock.expectOne(`${API_URL}/item-1/release`);
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toEqual({ quantity: 5 });
-      req.flush({ ...mockItem, reserved: 15 });
+      req.flush({ ...mockItem, quantityReserved: 15 });
     });
   });
 });

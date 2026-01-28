@@ -50,6 +50,7 @@ export interface UpdateProjectDto {
   slabType?: string;
   formworkSystem?: string;
   optimizationResult?: any;
+  extractedSlabGeometry?: string;
 }
 
 export interface ProjectStats {

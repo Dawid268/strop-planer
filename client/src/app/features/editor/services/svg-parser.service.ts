@@ -1,5 +1,5 @@
-import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
+import { inject, Injectable } from "@angular/core";
 import { Observable, map } from "rxjs";
 import type { Shape, Point } from "../models/editor.models";
 
@@ -18,7 +18,7 @@ export interface ParsedSvgShape {
   providedIn: "root",
 })
 export class SvgParserService {
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   /**
    * Fetches an SVG from URL and parses it into editable shapes

@@ -1,0 +1,6 @@
+.no-underline {
+  text-decoration: none;
+}
+::ng-deep .projects-card .p-card-content {
+  padding: 0 !important;
+}

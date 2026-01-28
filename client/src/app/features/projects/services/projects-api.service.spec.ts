@@ -1,10 +1,11 @@
+import "zone.js";
+import "zone.js/testing";
 import { TestBed } from "@angular/core/testing";
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { provideZonelessChangeDetection } from "@angular/core";
 import { ProjectsApiService } from "./projects-api.service";
 import { environment } from "../../../../environments/environment";
 import type {
@@ -38,7 +39,6 @@ describe("ProjectsApiService", () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        provideZonelessChangeDetection(),
         ProjectsApiService,
         provideHttpClient(),
         provideHttpClientTesting(),

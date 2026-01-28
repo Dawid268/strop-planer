@@ -26,6 +26,7 @@ export interface CalculateFormworkDto {
   includeBeams: boolean;
   preferredSystem?: string;
   additionalLoad?: number;
+  optimizeForWarehouse?: boolean;
 }
 
 export interface CalculateRequestDto {

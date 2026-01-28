@@ -15,7 +15,8 @@ import { SkeletonModule } from "primeng/skeleton";
 import { ConfirmationService, MessageService } from "primeng/api";
 import { ConfirmDialogModule } from "primeng/confirmdialog";
 import { ToastModule } from "primeng/toast";
-import { AddItemDialogComponent } from "./components/add-item-dialog.component";
+import { TranslocoModule, TranslocoService } from "@jsverse/transloco";
+import { AddItemDialogComponent } from "./components/add-item-dialog";
 import { InventoryStore } from "./store/inventory.store";
 import type {
   InventoryItem,
@@ -41,6 +42,7 @@ import type {
     SkeletonModule,
     ConfirmDialogModule,
     ToastModule,
+    TranslocoModule,
   ],
   providers: [DialogService, ConfirmationService, MessageService],
   template: `
@@ -49,20 +51,22 @@ import type {
         class="page-header flex flex-column md:flex-row md:justify-content-between md:align-items-start gap-4 mb-5"
       >
         <div>
-          <h1 class="text-3xl font-medium text-900 m-0">Magazyn</h1>
+          <h1 class="text-3xl font-medium text-900 m-0">
+            {{ "inventory.title" | transloco }}
+          </h1>
           <p class="text-600 mt-2">
-            Zarządzaj stanem magazynowym elementów szalunkowych
+            {{ "inventory.subtitle" | transloco }}
           </p>
         </div>
         <div class="header-actions flex gap-2">
           <p-button
-            label="Eksport CSV"
+            [label]="'inventory.exportCsv' | transloco"
             icon="pi pi-download"
             [outlined]="true"
             (click)="exportToCsv()"
           ></p-button>
           <p-button
-            label="Dodaj element"
+            [label]="'inventory.addItem' | transloco"
             icon="pi pi-plus"
             (click)="openAddDialog()"
           ></p-button>
@@ -78,7 +82,7 @@ import type {
               <input
                 pInputText
                 [(ngModel)]="searchQuery"
-                placeholder="Szukaj po nazwie..."
+                [placeholder]="'inventory.searchPlaceholder' | transloco"
                 (ngModelChange)="applySearch()"
                 class="w-full"
               />
@@ -90,20 +94,34 @@ import type {
             [(ngModel)]="filterType"
             optionLabel="label"
             optionValue="value"
-            placeholder="Wszystkie typy"
+            [placeholder]="'inventory.filters.allTypes' | transloco"
             (onChange)="applyFilters()"
             class="w-full md:w-12rem"
-          ></p-select>
+          >
+            <ng-template pTemplate="label" let-item>
+              {{ item.label | transloco }}
+            </ng-template>
+            <ng-template pTemplate="item" let-item>
+              {{ item.label | transloco }}
+            </ng-template>
+          </p-select>
 
           <p-select
             [options]="manufacturerOptions"
             [(ngModel)]="filterManufacturer"
             optionLabel="label"
             optionValue="value"
-            placeholder="Wszyscy producenci"
+            [placeholder]="'inventory.filters.allManufacturers' | transloco"
             (onChange)="applyFilters()"
             class="w-full md:w-12rem"
-          ></p-select>
+          >
+            <ng-template pTemplate="label" let-item>
+              {{ item.label | transloco }}
+            </ng-template>
+            <ng-template pTemplate="item" let-item>
+              {{ item.label | transloco }}
+            </ng-template>
+          </p-select>
         </div>
       </p-card>
 
@@ -114,11 +132,11 @@ import type {
             <ng-template pTemplate="header">
               <tr>
                 <th style="width: 4rem"></th>
-                <th>Nazwa</th>
-                <th>Typ</th>
-                <th>Producent</th>
-                <th>Wymiary</th>
-                <th>Dostępne</th>
+                <th>{{ "inventory.table.name" | transloco }}</th>
+                <th>{{ "inventory.table.type" | transloco }}</th>
+                <th>{{ "inventory.table.manufacturer" | transloco }}</th>
+                <th>{{ "inventory.table.dimensions" | transloco }}</th>
+                <th>{{ "inventory.table.available" | transloco }}</th>
                 <th style="width: 8rem"></th>
               </tr>
             </ng-template>
@@ -150,17 +168,21 @@ import type {
                   <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
                 </th>
                 <th pSortableColumn="name">
-                  Nazwa <p-sortIcon field="name"></p-sortIcon>
+                  {{ "inventory.table.name" | transloco }}
+                  <p-sortIcon field="name"></p-sortIcon>
                 </th>
                 <th pSortableColumn="type">
-                  Typ <p-sortIcon field="type"></p-sortIcon>
+                  {{ "inventory.table.type" | transloco }}
+                  <p-sortIcon field="type"></p-sortIcon>
                 </th>
                 <th pSortableColumn="manufacturer">
-                  Producent <p-sortIcon field="manufacturer"></p-sortIcon>
+                  {{ "inventory.table.manufacturer" | transloco }}
+                  <p-sortIcon field="manufacturer"></p-sortIcon>
                 </th>
-                <th>Wymiary</th>
+                <th>{{ "inventory.table.dimensions" | transloco }}</th>
                 <th pSortableColumn="quantityAvailable">
-                  Dostępne <p-sortIcon field="quantityAvailable"></p-sortIcon>
+                  {{ "inventory.table.available" | transloco }}
+                  <p-sortIcon field="quantityAvailable"></p-sortIcon>
                 </th>
                 <th style="width: 8rem"></th>
               </tr>
@@ -174,7 +196,7 @@ import type {
                 <td>
                   <p-tag
                     [severity]="getTypeSeverity(item.type)"
-                    [value]="getTypeLabel(item.type)"
+                    [value]="getTypeLabel(item.type) | transloco"
                   ></p-tag>
                 </td>
                 <td>{{ item.manufacturer }}</td>
@@ -213,7 +235,7 @@ import type {
       </p-card>
     </div>
     <p-confirmDialog
-      header="Potwierdzenie"
+      [header]="'projects.confirmDeleteHeader' | transloco"
       icon="pi pi-exclamation-triangle"
     ></p-confirmDialog>
     <p-toast></p-toast>
@@ -231,6 +253,7 @@ export class InventoryPageComponent implements OnInit {
   private readonly dialogService = inject(DialogService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
+  private readonly translocoService = inject(TranslocoService);
 
   public searchQuery = "";
   public filterType = "";
@@ -238,15 +261,15 @@ export class InventoryPageComponent implements OnInit {
   public selectedItems: InventoryItem[] = [];
 
   public typeOptions = [
-    { label: "Wszystkie typy", value: "" },
-    { label: "Panele", value: "panel" },
-    { label: "Podpory", value: "prop" },
-    { label: "Dźwigary", value: "beam" },
-    { label: "Akcesoria", value: "accessory" },
+    { label: "inventory.filters.allTypes", value: "" },
+    { label: "inventory.types.panel", value: "panel" },
+    { label: "inventory.types.prop", value: "prop" },
+    { label: "inventory.types.beam", value: "beam" },
+    { label: "inventory.types.accessory", value: "accessory" },
   ];
 
   public manufacturerOptions = [
-    { label: "Wszyscy producenci", value: "" },
+    { label: "inventory.filters.allManufacturers", value: "" },
     { label: "PERI", value: "PERI" },
     { label: "DOKA", value: "DOKA" },
     { label: "ULMA", value: "ULMA" },
@@ -286,15 +309,7 @@ export class InventoryPageComponent implements OnInit {
   }
 
   public getTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      panel: "Panel",
-      prop: "Podpora",
-      beam: "Dźwigar",
-      accessory: "Akcesoria",
-      drophead: "Głowica",
-      tripod: "Trójnóg",
-    };
-    return labels[type] || type;
+    return `inventory.types.${type}`;
   }
 
   public getTypeSeverity(
@@ -321,7 +336,7 @@ export class InventoryPageComponent implements OnInit {
 
   public openAddDialog(): void {
     const ref = this.dialogService.open(AddItemDialogComponent, {
-      header: "Dodaj element",
+      header: this.translocoService.translate("inventory.addItem"),
       width: "500px",
       contentStyle: { overflow: "auto" },
     });
@@ -331,8 +346,10 @@ export class InventoryPageComponent implements OnInit {
         this.store.createItem(result);
         this.messageService.add({
           severity: "success",
-          summary: "Sukces",
-          detail: "Dodano element",
+          summary: this.translocoService.translate("common.success"),
+          detail: this.translocoService.translate(
+            "inventory.notifications.itemAdded",
+          ),
         });
       }
     });
@@ -340,7 +357,7 @@ export class InventoryPageComponent implements OnInit {
 
   public editItem(item: InventoryItem): void {
     const ref = this.dialogService.open(AddItemDialogComponent, {
-      header: "Edytuj element",
+      header: this.translocoService.translate("inventory.editItem"),
       width: "500px",
       contentStyle: { overflow: "auto" },
       data: item,
@@ -351,8 +368,10 @@ export class InventoryPageComponent implements OnInit {
         this.store.updateItem({ id: item.id, dto: result });
         this.messageService.add({
           severity: "success",
-          summary: "Sukces",
-          detail: "Zaktualizowano element",
+          summary: this.translocoService.translate("common.success"),
+          detail: this.translocoService.translate(
+            "inventory.notifications.itemUpdated",
+          ),
         });
       }
     });
@@ -360,19 +379,23 @@ export class InventoryPageComponent implements OnInit {
 
   public deleteItem(id: string): void {
     this.confirmationService.confirm({
-      message: "Czy na pewno chcesz usunąć ten element z magazynu?",
-      header: "Potwierdzenie usunięcia",
+      message: this.translocoService.translate("inventory.confirmDelete"),
+      header: this.translocoService.translate("projects.confirmDeleteHeader"),
       icon: "pi pi-exclamation-triangle",
-      acceptLabel: "Tak, usuń",
-      rejectLabel: "Anuluj",
+      acceptLabel: this.translocoService.translate(
+        "projects.confirmDeleteButton",
+      ),
+      rejectLabel: this.translocoService.translate("projects.cancel"),
       acceptButtonStyleClass: "p-button-danger p-button-text",
       rejectButtonStyleClass: "p-button-text p-button-secondary",
       accept: () => {
         this.store.deleteItem(id);
         this.messageService.add({
           severity: "success",
-          summary: "Sukces",
-          detail: "Usunięto element",
+          summary: this.translocoService.translate("common.success"),
+          detail: this.translocoService.translate(
+            "inventory.notifications.itemDeleted",
+          ),
         });
       },
     });
@@ -385,23 +408,25 @@ export class InventoryPageComponent implements OnInit {
     if (itemsToExport.length === 0) {
       this.messageService.add({
         severity: "warn",
-        summary: "Błąd",
-        detail: "Brak elementów do eksportu",
+        summary: this.translocoService.translate("common.warning"),
+        detail: this.translocoService.translate(
+          "inventory.notifications.noItemsToExport",
+        ),
       });
       return;
     }
 
     const headers = [
-      "Nazwa",
-      "Typ",
-      "Producent",
-      "Wymiary",
-      "Dostępne",
-      "Zarezerwowane",
+      this.translocoService.translate("inventory.table.name"),
+      this.translocoService.translate("inventory.table.type"),
+      this.translocoService.translate("inventory.table.manufacturer"),
+      this.translocoService.translate("inventory.table.dimensions"),
+      this.translocoService.translate("inventory.table.available"),
+      this.translocoService.translate("inventory.table.reserved"),
     ];
     const rows = itemsToExport.map((item) => [
       item.name,
-      this.getTypeLabel(item.type),
+      this.translocoService.translate(this.getTypeLabel(item.type)),
       item.manufacturer,
       this.formatDimensions(item.dimensions),
       item.quantityAvailable,

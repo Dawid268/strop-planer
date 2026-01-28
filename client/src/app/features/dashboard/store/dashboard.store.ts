@@ -3,6 +3,13 @@ import { signalStore, withState, withMethods, patchState } from "@ngrx/signals";
 import { rxMethod } from "@ngrx/signals/rxjs-interop";
 import { pipe, switchMap, tap, forkJoin } from "rxjs";
 import { tapResponse } from "@ngrx/operators";
+import {
+  withDevtools,
+  withCallState,
+  setLoading,
+  setLoaded,
+  setError,
+} from "@angular-architects/ngrx-toolkit";
 import { ProjectsApiService } from "../../projects/services/projects-api.service";
 import { InventoryApiService } from "../../inventory/services/inventory-api.service";
 import type {
@@ -15,30 +22,28 @@ interface DashboardState {
   projectStats: ProjectStats | null;
   inventorySummary: InventorySummary | null;
   recentProjects: Project[];
-  loading: boolean;
-  error: string | null;
 }
 
 const initialState: DashboardState = {
   projectStats: null,
   inventorySummary: null,
   recentProjects: [],
-  loading: false,
-  error: null,
 };
 
 export const DashboardStore = signalStore(
   { providedIn: "root" },
   withState(initialState),
+  withDevtools("dashboardStore"),
+  withCallState(),
   withMethods(
     (
       store,
       projectsApi = inject(ProjectsApiService),
-      inventoryApi = inject(InventoryApiService)
+      inventoryApi = inject(InventoryApiService),
     ) => ({
       loadDashboard: rxMethod<void>(
         pipe(
-          tap(() => patchState(store, { loading: true, error: null })),
+          tap(() => patchState(store, setLoading())),
           switchMap(() =>
             forkJoin({
               stats: projectsApi.getStats(),
@@ -51,20 +56,23 @@ export const DashboardStore = signalStore(
                   projects: Project[];
                   inventory: InventorySummary;
                 }) =>
-                  patchState(store, {
-                    projectStats: result.stats,
-                    recentProjects: result.projects.slice(0, 5),
-                    inventorySummary: result.inventory,
-                    loading: false,
-                  }),
+                  patchState(
+                    store,
+                    {
+                      projectStats: result.stats,
+                      recentProjects: result.projects.slice(0, 5),
+                      inventorySummary: result.inventory,
+                    },
+                    setLoaded(),
+                  ),
                 error: (error: Error) =>
-                  patchState(store, { error: error.message, loading: false }),
-              })
-            )
-          )
-        )
+                  patchState(store, setError(error.message)),
+              }),
+            ),
+          ),
+        ),
       ),
-      clearError: () => patchState(store, { error: null }),
-    })
-  )
+      clearError: () => patchState(store, setLoaded()),
+    }),
+  ),
 );

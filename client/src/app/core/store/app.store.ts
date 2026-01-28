@@ -1,5 +1,6 @@
 import { patchState, signalStore, withMethods, withState } from "@ngrx/signals";
 import { inject } from "@angular/core";
+import { withDevtools } from "@angular-architects/ngrx-toolkit";
 import { ApiService } from "../services/api";
 import { tap } from "rxjs";
 import { rxMethod } from "@ngrx/signals/rxjs-interop";
@@ -28,6 +29,7 @@ const initialState: AppState = {
 export const AppStore = signalStore(
   { providedIn: "root" },
   withState(initialState),
+  withDevtools("appStore"),
   withMethods((store, apiService = inject(ApiService)) => ({
     setLoading(isLoading: boolean) {
       patchState(store, { isLoading });
@@ -46,5 +48,5 @@ export const AppStore = signalStore(
       const mode = store.themeMode() === "light" ? "dark" : "light";
       patchState(store, { themeMode: mode });
     },
-  }))
+  })),
 );

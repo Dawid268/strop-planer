@@ -1,0 +1,13 @@
+.editor-sidebar {
+}
+
+::ng-deep .p-accordion-header {
+  background: transparent !important;
+  border: none !important;
+  padding: 1rem !important;
+}
+
+::ng-deep .p-accordion-content {
+  border: none !important;
+  padding: 0 1rem 1rem 1rem !important;
+}

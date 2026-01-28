@@ -1,73 +1,43 @@
 {
   "common": {
     "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
     "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
     "add": "Add",
-    "close": "Close",
-    "confirm": "Confirm",
     "search": "Search",
     "loading": "Loading...",
-    "error": "An error occurred",
+    "error": "Error occurred",
     "success": "Success",
+    "warning": "Warning",
+    "optional": "optional",
     "yes": "Yes",
     "no": "No",
     "back": "Back",
     "next": "Next",
-    "refresh": "Refresh"
+    "finish": "Finish",
+    "actions": "Actions"
   },
   "auth": {
-    "login": "Log in",
-    "logout": "Log out",
-    "register": "Register",
-    "email": "Email",
-    "password": "Password",
-    "confirmPassword": "Confirm password",
-    "companyName": "Company name",
-    "phone": "Phone",
-    "forgotPassword": "Forgot password?",
-    "noAccount": "Don't have an account?",
-    "hasAccount": "Already have an account?",
-    "loginTitle": "Login",
-    "registerTitle": "Registration",
-    "loginSubtitle": "Sign in to your account",
-    "registerSubtitle": "Create a new account",
-    "loginError": "Invalid email or password",
-    "registerError": "Registration error",
-    "emailRequired": "Email is required",
-    "passwordRequired": "Password is required",
-    "companyRequired": "Company name is required",
-    "passwordMinLength": "Password must be at least 6 characters",
-    "passwordsMustMatch": "Passwords must match",
-    "registerSuccess": "Account created successfully",
-    "welcomeBack": "Welcome back!"
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register"
   },
   "nav": {
     "dashboard": "Dashboard",
     "projects": "Projects",
     "inventory": "Inventory",
-    "customers": "Customers",
-    "rentals": "Rentals",
-    "settings": "Settings",
-    "profile": "Profile"
+    "editor": "Editor",
+    "settings": "Settings"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome to Formwork Optimizer",
-    "recentProjects": "Recent projects",
-    "quickActions": "Quick actions",
-    "newProject": "New project",
-    "importPdf": "Import from PDF",
-    "statistics": "Statistics",
-    "totalProjects": "Total projects",
-    "activeRentals": "Active rentals",
-    "inventoryItems": "Inventory items",
-    "noProjects": "No projects. Create your first one!",
-    "viewAll": "View all"
+    "welcome": "Welcome",
+    "recentProjects": "Recent Projects",
+    "quickActions": "Quick Actions"
   },
   "projects": {
     "title": "Projects",
+    "subtitle": "Manage floor slab formwork projects",
     "newProject": "New project",
     "editProject": "Edit project",
     "projectName": "Project name",
@@ -84,94 +54,168 @@
     "deleteProject": "Delete project",
     "confirmDelete": "Are you sure you want to delete this project?",
     "noProjects": "No projects",
-    "noProjectsDesc": "Create your first formwork project",
+    "noProjectsDesc": "Create your first project to start formwork optimization.",
+    "createFirstProject": "Create project",
+    "new": {
+      "fileProcessing": "Processing file...",
+      "clickToChange": "Click to change file",
+      "dragDrop": "Drag PDF file or click",
+      "supportedFormats": "Supported formats: PDF",
+      "namePlaceholder": "e.g. Residential building A",
+      "status": {
+        "creating": "Creating project...",
+        "extracting": "Generating geometry (Auto-Trace)...",
+        "ready": "Ready!"
+      },
+      "errors": {
+        "uploadFailed": "File upload failed",
+        "nameRequired": "Project name is required",
+        "extractionFailed": "Geometry generation failed",
+        "creationFailed": "Project creation failed. Check connection.",
+        "saveFailed": "Save failed"
+      }
+    },
     "status": {
       "draft": "Draft",
       "calculated": "Calculated",
       "optimized": "Optimized",
+      "sent": "Sent",
       "completed": "Completed"
+    },
+    "table": {
+      "name": "Project name",
+      "status": "Status",
+      "area": "Area",
+      "updated": "Update"
     },
     "tabs": {
       "importFiles": "Import from files",
       "manualEntry": "Manual entry"
-    }
-  },
-  "fileUpload": {
-    "title": "Upload project files",
-    "subtitle": "You can upload all files at once - the system will recognize which ones are needed",
-    "dragDrop": "Drag files here or click to select",
-    "supportedFormats": "Supported formats",
-    "filesUploaded": "{{count}} files uploaded",
-    "addMore": "Add more files",
-    "analyze": "Analyze {{count}} files",
-    "analyzing": "Analyzing files and recognizing drawing types...",
-    "recognized": "Recognized {{count}} files",
-    "useSelected": "Use selected",
-    "uploadOther": "Upload other files",
-    "confidence": "{{percent}}% confidence",
-    "errors": {
-      "unsupportedFormat": "Unsupported file format",
-      "fileTooLarge": "File too large (max 50MB)",
-      "maxFiles": "Maximum {{max}} files allowed"
-    }
-  },
-  "drawingTypes": {
-    "slab": "Slab",
-    "structure": "Structure",
-    "reinforcement": "Reinforcement",
-    "architecture": "Architecture",
-    "roof": "Roof",
-    "foundation": "Foundation",
-    "other": "Other"
+    },
+    "confirmDeleteHeader": "Delete confirmation",
+    "confirmDeleteButton": "Yes, delete",
+    "cancel": "Cancel"
   },
   "inventory": {
     "title": "Inventory",
+    "subtitle": "Manage inventory of formwork elements",
+    "exportCsv": "Export CSV",
     "addItem": "Add item",
     "editItem": "Edit item",
+    "searchPlaceholder": "Search by name...",
     "itemName": "Name",
     "itemType": "Type",
     "manufacturer": "Manufacturer",
-    "system": "System",
-    "catalogCode": "Catalog code",
-    "dimensions": "Dimensions",
-    "weight": "Weight (kg)",
-    "quantity": "Quantity",
-    "available": "Available",
-    "reserved": "Reserved",
-    "noItems": "No inventory items",
+    "quantity": "Quantity in warehouse",
+    "status": {
+      "available": "Available",
+      "outOfStock": "Out of stock",
+      "lowStock": "Low stock"
+    },
+    "filters": {
+      "allTypes": "All types",
+      "allManufacturers": "All manufacturers"
+    },
+    "table": {
+      "name": "Name",
+      "type": "Type",
+      "manufacturer": "Manufacturer",
+      "dimensions": "Dimensions",
+      "available": "Available",
+      "reserved": "Reserved"
+    },
     "types": {
       "panel": "Panel",
       "prop": "Prop",
       "beam": "Beam",
-      "accessory": "Accessory"
+      "accessory": "Accessory",
+      "drophead": "Drophead",
+      "tripod": "Tripod"
     },
-    "filters": {
-      "all": "All",
-      "allTypes": "All types",
-      "allSystems": "All systems"
-    }
+    "form": {
+      "name": "Item name",
+      "type": "Item type",
+      "manufacturer": "Manufacturer",
+      "system": "System",
+      "quantity": "Quantity in warehouse",
+      "dimensions": {
+        "title": "Dimensions",
+        "length": "Length",
+        "width": "Width",
+        "height": "Height"
+      }
+    },
+    "notifications": {
+      "itemAdded": "Item added",
+      "itemUpdated": "Item updated",
+      "itemDeleted": "Item deleted",
+      "noItemsToExport": "No items to export"
+    },
+    "confirmDelete": "Are you sure you want to delete this item from inventory?"
   },
   "editor": {
-    "title": "Project editor",
-    "tools": "Tools",
-    "layers": "Layers",
-    "properties": "Properties",
-    "calculate": "Calculate",
-    "optimize": "Optimize",
-    "export": "Export",
-    "import": "Import",
-    "zoomIn": "Zoom in",
-    "zoomOut": "Zoom out",
     "fitToScreen": "Fit to screen",
     "undo": "Undo",
-    "redo": "Redo"
+    "redo": "Redo",
+    "selected": "Selected",
+    "layers": {
+      "slab": "Slab",
+      "beams": "Beams",
+      "formwork": "Formwork",
+      "annotations": "Annotations"
+    },
+    "sidebar": {
+      "layers": "Layers",
+      "properties": "Properties",
+      "catalog": "Catalog",
+      "visibility": "Visibility",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "noSelection": "No selection",
+      "propType": "Type",
+      "propRotation": "Rotation",
+      "selectedCount": "Selected {{count}} items"
+    },
+    "tools": {
+      "select": "Select (V)",
+      "pan": "Pan (H)",
+      "addPanel": "Add panel (P)",
+      "addProp": "Add prop (S)",
+      "drawBeam": "Draw beam (B)",
+      "drawPolygon": "Draw slab (Polygon)",
+      "traceSlab": "Trace Slab (Marker with Snapping - M)"
+    },
+    "viewModes": {
+      "full": "Full Plan",
+      "slab": "Formwork (Isolation)"
+    },
+    "actions": {
+      "autoLayout": "Auto-Layout (Generate)",
+      "autoTrace": "Auto-Trace PDF (Vectorization)",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "fitToScreen": "Fit to Screen",
+      "toggleGrid": "Show/hide grid",
+      "toggleSnap": "Snap to grid (G)",
+      "rotateLeft": "Rotate left 90°",
+      "rotateRight": "Rotate right 90°",
+      "exportSelected": "Export to new tab",
+      "generateOptimal": "Generate Optimal Formwork"
+    },
+    "tooltips": {
+      "exportSelected": "Export selected element",
+      "generateOptimal": "Arrange formwork considering warehouse stock"
+    }
   },
   "errors": {
-    "generic": "An error occurred. Please try again.",
-    "network": "Network error",
-    "unauthorized": "Unauthorized",
-    "notFound": "Not found",
-    "validation": "Validation error",
-    "serverError": "Server error"
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Page not found",
+    "unauthorized": "Unauthorized access"
+  },
+  "fileUpload": {
+    "title": "Upload project files",
+    "dragDrop": "Drag and drop PDF files here",
+    "or": "or",
+    "browse": "browse files"
   }
 }

@@ -9,6 +9,13 @@ import {
 import { rxMethod } from "@ngrx/signals/rxjs-interop";
 import { pipe, switchMap, tap } from "rxjs";
 import { tapResponse } from "@ngrx/operators";
+import {
+  withDevtools,
+  withCallState,
+  setLoading,
+  setLoaded,
+  setError,
+} from "@angular-architects/ngrx-toolkit";
 import { InventoryApiService } from "../services/inventory-api.service";
 import type {
   InventoryItem,
@@ -21,21 +28,19 @@ interface InventoryState {
   items: InventoryItem[];
   summary: InventorySummary | null;
   filters: { type?: string; system?: string; manufacturer?: string };
-  loading: boolean;
-  error: string | null;
 }
 
 const initialState: InventoryState = {
   items: [],
   summary: null,
   filters: {},
-  loading: false,
-  error: null,
 };
 
 export const InventoryStore = signalStore(
   { providedIn: "root" },
   withState(initialState),
+  withDevtools("inventoryStore"),
+  withCallState(),
   withComputed((store) => ({
     itemCount: computed(() => store.items().length),
     panels: computed(() => store.items().filter((i) => i.type === "panel")),
@@ -59,23 +64,19 @@ export const InventoryStore = signalStore(
     } | void>(
       pipe(
         tap((filters) =>
-          patchState(store, {
-            loading: true,
-            error: null,
-            filters: filters || {},
-          })
+          patchState(store, { filters: filters || {} }, setLoading()),
         ),
         switchMap((filters) =>
           api.getAll(filters || {}).pipe(
             tapResponse({
               next: (items: InventoryItem[]) =>
-                patchState(store, { items, loading: false }),
+                patchState(store, { items }, setLoaded()),
               error: (error: Error) =>
-                patchState(store, { error: error.message, loading: false }),
-            })
-          )
-        )
-      )
+                patchState(store, setError(error.message)),
+            }),
+          ),
+        ),
+      ),
     ),
     loadSummary: rxMethod<void>(
       pipe(
@@ -85,70 +86,79 @@ export const InventoryStore = signalStore(
               next: (summary: InventorySummary) =>
                 patchState(store, { summary }),
               error: () => {},
-            })
-          )
-        )
-      )
+            }),
+          ),
+        ),
+      ),
     ),
     createItem: rxMethod<CreateInventoryItemDto>(
       pipe(
-        tap(() => patchState(store, { loading: true })),
+        tap(() => patchState(store, setLoading())),
         switchMap((dto) =>
           api.create(dto).pipe(
             tapResponse({
               next: (item: InventoryItem) =>
-                patchState(store, {
-                  items: [...store.items(), item],
-                  loading: false,
-                }),
+                patchState(
+                  store,
+                  { items: [...store.items(), item] },
+                  setLoaded(),
+                ),
               error: (error: Error) =>
-                patchState(store, { error: error.message, loading: false }),
-            })
-          )
-        )
-      )
+                patchState(store, setError(error.message)),
+            }),
+          ),
+        ),
+      ),
     ),
     updateItem: rxMethod<{ id: string; dto: UpdateInventoryItemDto }>(
       pipe(
-        tap(() => patchState(store, { loading: true })),
+        tap(() => patchState(store, setLoading())),
         switchMap(({ id, dto }) =>
           api.update(id, dto).pipe(
             tapResponse({
               next: (updated: InventoryItem) =>
-                patchState(store, {
-                  items: store.items().map((i) => (i.id === id ? updated : i)),
-                  loading: false,
-                }),
+                patchState(
+                  store,
+                  {
+                    items: store
+                      .items()
+                      .map((i) => (i.id === id ? updated : i)),
+                  },
+                  setLoaded(),
+                ),
               error: (error: Error) =>
-                patchState(store, { error: error.message, loading: false }),
-            })
-          )
-        )
-      )
+                patchState(store, setError(error.message)),
+            }),
+          ),
+        ),
+      ),
     ),
     deleteItem: rxMethod<string>(
       pipe(
-        tap(() => patchState(store, { loading: true })),
+        tap(() => patchState(store, setLoading())),
         switchMap((id) =>
           api.delete(id).pipe(
             tapResponse({
               next: () =>
-                patchState(store, {
-                  items: store.items().filter((i) => i.id !== id),
-                  loading: false,
-                }),
+                patchState(
+                  store,
+                  {
+                    items: store.items().filter((i) => i.id !== id),
+                  },
+                  setLoaded(),
+                ),
               error: (error: Error) =>
-                patchState(store, { error: error.message, loading: false }),
-            })
-          )
-        )
-      )
+                patchState(store, setError(error.message)),
+            }),
+          ),
+        ),
+      ),
     ),
     setFilters: (filters: {
       type?: string;
       system?: string;
       manufacturer?: string;
     }) => patchState(store, { filters }),
-    clearError: () => patchState(store, { error: null }),
-  }))
+    clearError: () => patchState(store, setLoaded()),
+  })),
 );

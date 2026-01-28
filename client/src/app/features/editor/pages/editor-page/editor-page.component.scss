@@ -1,0 +1,14 @@
+.properties-panel {
+  width: 320px;
+  background: white;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.hidden {
+  display: none !important;
+}

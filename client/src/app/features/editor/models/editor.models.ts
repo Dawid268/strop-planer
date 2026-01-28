@@ -1,11 +1,32 @@
-export type LayerType = "slab" | "beams" | "formwork" | "annotations";
+/** Default layer names - can be extended with user-created layers */
+export type DefaultLayerName = "slab" | "beams" | "formwork" | "annotations";
+
+/** Layer category determines permissions and behavior */
+export type LayerCategory = "system" | "data" | "user";
 
 export interface LayerState {
-  name: LayerType;
+  /** Unique identifier for the layer */
+  id: string;
+  /** Display name (can be edited for user layers) */
+  name: string;
+  /** Category determines layer behavior */
+  category: LayerCategory;
+  /** Whether the layer is visible on canvas */
   visible: boolean;
+  /** Whether shapes on this layer can be edited */
   locked: boolean;
+  /** Layer opacity (0-1) */
   opacity: number;
+  /** Whether the layer can be edited (name change) */
+  isEditable: boolean;
+  /** Whether the layer can be deleted */
+  isRemovable: boolean;
+  /** Optional color for layer badge in UI */
+  color?: string;
 }
+
+/** Backward compatibility type alias - now accepts any layer ID string */
+export type LayerType = string;
 
 export type EditorTool = ToolType;
 
@@ -15,7 +36,8 @@ export type ToolType =
   | "add-panel"
   | "add-prop"
   | "draw-beam"
-  | "draw-polygon" // Added for tracing
+  | "draw-polygon"
+  | "trace-slab"
   | "rectangle";
 
 export interface Point {
@@ -80,7 +102,14 @@ export interface EditorState {
   activeTool: ToolType;
   activeCatalogItem: CatalogItem | null;
   backgroundUrl?: string | null;
+  referenceGeometry?: any | null; // Data for snapping
+  viewMode: ViewMode;
+  projectId: string | null;
+  /** ID of the currently active layer */
+  activeLayerId: string;
 }
+
+export type ViewMode = "full" | "slab";
 
 export const DEFAULT_COLORS = {
   slab: { fill: "#eeeeee", stroke: "#9e9e9e" },

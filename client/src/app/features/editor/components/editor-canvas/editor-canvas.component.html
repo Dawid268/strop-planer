@@ -1,0 +1,83 @@
+<div
+  class="canvas-container w-full h-full overflow-hidden bg-gray-100 relative"
+  #container
+  tabindex="0"
+>
+  <canvas #fabricCanvas></canvas>
+
+  @if (
+    interaction.showContextToolbar() && interaction.contextToolbarPosition()
+  ) {
+    <div
+      class="context-toolbar absolute flex gap-1 p-1 bg-white shadow-3 border-round-lg"
+      [style.left.px]="interaction.contextToolbarPosition()!.x"
+      [style.top.px]="interaction.contextToolbarPosition()!.y"
+    >
+      @if (
+        interaction.selectedObjectType() === "slab" ||
+        interaction.selectedObjectType() === "polygon"
+      ) {
+        <button
+          pButton
+          icon="pi pi-magic"
+          class="p-button-success p-button-sm p-button-text"
+          pTooltip="Generuj Szalunek"
+          (click)="generateFormworkForSelected()"
+        ></button>
+      }
+      <button
+        pButton
+        icon="pi pi-trash"
+        class="p-button-danger p-button-sm p-button-text"
+        pTooltip="Usuń (Del)"
+        (click)="deleteSelected()"
+      ></button>
+      <button
+        pButton
+        icon="pi pi-refresh"
+        class="p-button-sm p-button-text"
+        pTooltip="Obróć 90° (R)"
+        (click)="rotateSelected()"
+      ></button>
+      <button
+        pButton
+        icon="pi pi-copy"
+        class="p-button-sm p-button-text"
+        pTooltip="Kopiuj (Ctrl+C)"
+        (click)="copySelected()"
+      ></button>
+      <button
+        pButton
+        icon="pi pi-lock"
+        class="p-button-sm p-button-text"
+        pTooltip="Zablokuj"
+        (click)="lockSelected()"
+      ></button>
+    </div>
+  }
+
+  @if (state.isLoading()) {
+    <div
+      class="absolute inset-0 flex align-items-center justify-content-center bg-white-alpha-70"
+    >
+      <div class="flex flex-column align-items-center gap-3">
+        <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+        <span class="text-600">Ładowanie wektorów...</span>
+      </div>
+    </div>
+  }
+
+  @if (!state.isLoading() && state.objectCount() === 0) {
+    <div
+      class="absolute inset-0 flex align-items-center justify-content-center pointer-events-none"
+    >
+      <div class="text-center opacity-50">
+        <i class="pi pi-compass text-8xl mb-4 text-400"></i>
+        <h3 class="text-3xl font-medium text-900 m-0">
+          Twój projekt jest pusty
+        </h3>
+        <p class="text-600 mt-2">Zaimportuj plik SVG lub narysuj kształty</p>
+      </div>
+    </div>
+  }
+</div>
