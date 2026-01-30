@@ -4,6 +4,6 @@ import { RentalsController } from './rentals.controller';
 
 @Module({
   providers: [RentalsService],
-  controllers: [RentalsController]
+  controllers: [RentalsController],
 })
 export class RentalsModule {}

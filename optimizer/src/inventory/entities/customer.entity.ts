@@ -7,23 +7,17 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 
-// Forward declarations for TypeORM relations
-// All entities in this file reference each other, order matters
-
-/**
- * Element wynajmu (pojedyncza pozycja w zamówieniu)
- */
 @Entity('rental_items')
 export class RentalItemEntity {
   @PrimaryGeneratedColumn('uuid')
   public id!: string;
 
-  // Relacja do wynajmu - używamy string zamiast klasy
   @ManyToOne('RentalEntity', 'items')
   @JoinColumn({ name: 'rentalId' })
-  public rental!: any;
+  public rental!: Relation<RentalEntity>;
 
   @Column({ type: 'uuid' })
   public rentalId!: string;
@@ -88,10 +82,9 @@ export class RentalEntity {
   @Column({ length: 20, unique: true })
   public orderNumber!: string;
 
-  // Relacja do klienta
   @ManyToOne('CustomerEntity', 'rentals')
   @JoinColumn({ name: 'customerId' })
-  public customer!: any;
+  public customer!: Relation<CustomerEntity>;
 
   @Column({ type: 'uuid' })
   public customerId!: string;

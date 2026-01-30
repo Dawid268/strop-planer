@@ -5,10 +5,13 @@ import {
   Body,
   Param,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { GeometryService } from './geometry.service';
-import * as fs from 'fs';
+import { ExtractGeometryDto } from './dto/extract-geometry.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Geometry')
 @Controller('geometry')
 export class GeometryController {
   private readonly logger = new Logger(GeometryController.name);
@@ -16,23 +19,30 @@ export class GeometryController {
   constructor(private readonly geometryService: GeometryService) {}
 
   @Post('extract')
-  async startExtraction(
-    @Body('pdfPath') pdfPath: string,
-    @Body('projectId') projectId?: string,
-  ) {
+  @ApiOperation({ summary: 'Start geometry extraction from PDF' })
+  @ApiResponse({ status: 201, description: 'Extraction job started' })
+  startExtraction(@Body() dto: ExtractGeometryDto): { jobId: string } {
     this.logger.log(
-      `Received extraction request for: ${pdfPath} (Project: ${projectId})`,
+      `Received extraction request for: ${dto.pdfPath} (Project: ${dto.projectId})`,
     );
-    if (!pdfPath || !fs.existsSync(pdfPath)) {
-      this.logger.error(`PDF path not found: ${pdfPath}`);
-      throw new BadRequestException('Invalid PDF path');
+
+    try {
+      const job = this.geometryService.startExtraction(
+        dto.pdfPath,
+        dto.projectId,
+      );
+      this.logger.log(`Started job: ${job.jobId}`);
+      return job;
+    } catch (error) {
+      this.logger.error('Failed to start extraction', error);
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Unknown error',
+      );
     }
-    const job = await this.geometryService.startExtraction(pdfPath, projectId);
-    this.logger.log(`Started job: ${job.jobId}`);
-    return job;
   }
 
   @Get('jobs/:id')
+  @ApiOperation({ summary: 'Get status of extraction job' })
   getStatus(@Param('id') id: string) {
     this.logger.debug(`Checking status for job: ${id}`);
     const job = this.geometryService.getJobStatus(id);
@@ -43,4 +53,3 @@ export class GeometryController {
     return job;
   }
 }
-import { Logger } from '@nestjs/common';

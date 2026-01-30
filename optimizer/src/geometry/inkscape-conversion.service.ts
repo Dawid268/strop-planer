@@ -30,7 +30,8 @@ export class InkscapeConversionService {
         `Inkscape conversion failed for ${pdfPath} page ${pageNumber}`,
         error,
       );
-      throw new Error(`Inkscape conversion failed: ${error.message}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Inkscape conversion failed: ${msg}`);
     }
   }
 
@@ -71,8 +72,9 @@ export class InkscapeConversionService {
       const match = stdout.match(/Pages:\s+(\d+)/);
       return match ? parseInt(match[1], 10) : 1;
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
       this.logger.warn(
-        `Could not determine page count for ${pdfPath}, defaulting to 1. Error: ${e.message}`,
+        `Could not determine page count for ${pdfPath}, defaulting to 1. Error: ${msg}`,
       );
       return 1;
     }

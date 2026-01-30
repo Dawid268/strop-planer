@@ -1,32 +1,41 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, LoggerService } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
+import { TransformInterceptor } from '@common/interceptors/transform.interceptor';
+import { getCorsConfig, EnvironmentVariables } from '@config/index';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const configService = app.get(ConfigService<EnvironmentVariables>);
+  const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
 
-  // Prefiks API
+  app.useLogger(logger);
+
   app.setGlobalPrefix('api');
 
-  // Włącz walidację
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  // Włącz CORS
-  app.enableCors({
-    origin: ['http://localhost:4200', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    credentials: true,
-  });
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Konfiguracja Swagger
-  const config = new DocumentBuilder()
+  const corsConfig = getCorsConfig(configService);
+  app.enableCors(corsConfig);
+
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('Szalunki Optimizer API')
     .setDescription(
       `
@@ -45,13 +54,17 @@ async function bootstrap(): Promise<void> {
     `,
     )
     .setVersion('1.0.0')
+    .addBearerAuth()
+    .addTag('Auth', 'Autentykacja i autoryzacja')
     .addTag('PDF', 'Parsowanie projektów konstrukcyjnych')
     .addTag('Formwork', 'Obliczenia i optymalizacja szalunków')
     .addTag('Slab', 'Dane stropów')
+    .addTag('Projects', 'Zarządzanie projektami')
+    .addTag('Inventory', 'Magazyn elementów')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, {
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document, {
     customSiteTitle: 'Szalunki Optimizer API',
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
     customCss: `
@@ -60,19 +73,23 @@ async function bootstrap(): Promise<void> {
     `,
   });
 
-  const port = process.env['PORT'] || 3000;
+  app.enableShutdownHooks();
+
+  const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
 
-  console.log(`
+  const env = configService.get<string>('NODE_ENV') ?? 'development';
+  logger.log(`
   ╔═══════════════════════════════════════════════════════════╗
   ║                                                           ║
   ║   🏗️  SZALUNKI OPTIMIZER API                              ║
   ║                                                           ║
   ║   Server:  http://localhost:${port}                         ║
-  ║   Swagger: http://localhost:${port}/api                     ║
+  ║   Swagger: http://localhost:${port}/api/docs                ║
+  ║   Environment: ${env}                        ║
   ║                                                           ║
   ╚═══════════════════════════════════════════════════════════╝
   `);
 }
 
-bootstrap();
+void bootstrap();

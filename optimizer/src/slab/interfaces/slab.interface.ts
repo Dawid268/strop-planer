@@ -1,85 +1,95 @@
-/**
- * Interfejsy dla danych stropu wyekstrahowanych z PDF
- */
+import { AutoMap } from '@automapper/classes';
+import { SlabType, ReinforcementElementType } from '../enums/slab.enums';
 
-export interface SlabDimensions {
-  /** Długość stropu w metrach */
-  length: number;
-  /** Szerokość stropu w metrach */
-  width: number;
-  /** Grubość stropu w centymetrach */
-  thickness: number;
-  /** Powierzchnia w m² */
-  area: number;
+export class SlabDimensions {
+  @AutoMap()
+  length!: number;
+  @AutoMap()
+  width!: number;
+  @AutoMap()
+  thickness!: number;
+  @AutoMap()
+  area!: number;
 }
 
-export interface BeamData {
-  /** Symbol belki (np. B1, B2) */
-  symbol: string;
-  /** Liczba belek danego typu */
-  quantity: number;
-  /** Średnica zbrojenia głównego [mm] */
-  mainRebarDiameter: number;
-  /** Średnica strzemion [mm] */
-  stirrupDiameter: number;
-  /** Długość całkowita prętów [m] */
-  totalLength: number;
-  /** Rozpiętość belki [m] */
+export class BeamSection {
+  @AutoMap()
+  width!: number;
+  @AutoMap()
+  height!: number;
+}
+
+export class BeamData {
+  @AutoMap()
+  symbol!: string;
+  @AutoMap()
+  quantity!: number;
+  @AutoMap()
+  mainRebarDiameter!: number;
+  @AutoMap()
+  stirrupDiameter!: number;
+  @AutoMap()
+  totalLength!: number;
+  @AutoMap()
   span?: number;
-  /** Przekrój belki [cm x cm] */
-  section?: { width: number; height: number };
+  @AutoMap(() => BeamSection)
+  section?: BeamSection;
 }
 
-export interface ReinforcementData {
-  /** Oznaczenie elementu (W1, B1, S1, etc.) */
-  elementId: string;
-  /** Typ elementu */
-  elementType: 'wieniec' | 'belka' | 'strop' | 'slup' | 'nadproze';
-  /** Średnica pręta [mm] */
-  diameter: number;
-  /** Długość pojedynczego pręta [m] */
-  length: number;
-  /** Ilość prętów */
-  quantity: number;
-  /** Masa całkowita [kg] */
+export class ReinforcementData {
+  @AutoMap()
+  elementId!: string;
+  @AutoMap()
+  elementType!: ReinforcementElementType;
+  @AutoMap()
+  diameter!: number;
+  @AutoMap()
+  length!: number;
+  @AutoMap()
+  quantity!: number;
+  @AutoMap()
   totalMass?: number;
 }
 
-export interface SlabData {
-  /** Nazwa/identyfikator stropu */
-  id: string;
-  /** Wymiary stropu */
-  dimensions: SlabDimensions;
-  /** Typ stropu (monolityczny, prefabrykowany, Teriva, etc.) */
-  type: 'monolityczny' | 'teriva' | 'filigran' | 'zerowiec' | 'inny';
-  /** Lista belek stropowych */
-  beams: BeamData[];
-  /** Dane zbrojeniowe */
-  reinforcement: ReinforcementData[];
-  /** Osie konstrukcyjne */
-  axes: {
-    horizontal: string[];
-    vertical: string[];
-  };
-  /** Klasa betonu */
+export class AxesData {
+  @AutoMap()
+  horizontal!: string[];
+  @AutoMap()
+  vertical!: string[];
+}
+
+export class SlabData {
+  @AutoMap()
+  id!: string;
+  @AutoMap(() => SlabDimensions)
+  dimensions!: SlabDimensions;
+  @AutoMap()
+  type!: SlabType;
+  @AutoMap(() => [BeamData])
+  beams!: BeamData[];
+  @AutoMap(() => [ReinforcementData])
+  reinforcement!: ReinforcementData[];
+  @AutoMap(() => AxesData)
+  axes!: AxesData;
+  @AutoMap()
   concreteClass?: string;
-  /** Klasa stali zbrojeniowej */
+  @AutoMap()
   steelClass?: string;
-  /** Dodatkowe uwagi z projektu */
+  @AutoMap()
   notes?: string[];
 }
 
-export interface ExtractedPdfData {
-  /** Nazwa pliku źródłowego */
-  sourceFile: string;
-  /** Data ekstrakcji */
-  extractedAt: Date;
-  /** Wyekstrahowane dane stropu */
-  slab: SlabData | null | undefined;
-  /** Surowy tekst z PDF */
-  rawText: string;
-  /** Ostrzeżenia podczas parsowania */
-  warnings: string[];
-  /** Wykryte kształty geometryczne (Polygons) */
+export class ExtractedPdfData {
+  @AutoMap()
+  sourceFile!: string;
+  @AutoMap()
+  extractedAt!: Date;
+  @AutoMap(() => SlabData)
+  slab?: SlabData | null;
+  @AutoMap()
+  rawText!: string;
+  @AutoMap()
+  warnings!: string[];
+  @AutoMap()
   geometry?: { polygons: { x: number; y: number }[][] };
 }
