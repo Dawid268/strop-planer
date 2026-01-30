@@ -4,13 +4,13 @@ import {
   UploadedFile,
   UploadedFiles,
   UseInterceptors,
-  HttpException,
-  HttpStatus,
+  BadRequestException,
+  InternalServerErrorException,
   Get,
   Param,
   Inject,
   forwardRef,
-  Req,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -22,14 +22,29 @@ import {
 } from '@nestjs/swagger';
 import { PdfService, BatchUploadResult } from './pdf.service';
 import { ExtractedPdfData } from '../slab/interfaces/slab.interface';
-import { DxfConversionService } from '../floor-plan/dxf-conversion.service';
+import {
+  DxfConversionService,
+  DxfData,
+} from '../floor-plan/dxf-conversion.service';
 import { ProjectsService } from '../projects/projects.service';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
+interface PdfUploadResponse {
+  success: boolean;
+  paths: {
+    pdf: string;
+    dxf: string;
+    json: string;
+  };
+  data: DxfData;
+}
+
 @ApiTags('PDF')
 @Controller('pdf')
 export class PdfController {
+  private readonly logger = new Logger(PdfController.name);
+
   public constructor(
     private readonly pdfService: PdfService,
     private readonly dxfConversionService: DxfConversionService,
@@ -65,9 +80,8 @@ export class PdfController {
   public async uploadPdfForProject(
     @UploadedFile() file: Express.Multer.File,
     @Param('projectId') projectId: string,
-    @Req() req: any,
-  ): Promise<any> {
-    if (!file) throw new HttpException('Brak pliku', HttpStatus.BAD_REQUEST);
+  ): Promise<PdfUploadResponse> {
+    if (!file) throw new BadRequestException('Brak pliku');
 
     try {
       // 1. Parse/Save PDF (Legacy parsing + Save to disk)
@@ -110,13 +124,13 @@ export class PdfController {
             geoJsonPath: jsonPathRel,
           });
         } catch (err) {
-          console.warn(
+          this.logger.warn(
             `Could not update artifacts for project ${projectId} (might be temp or missing):`,
             err,
           );
         }
       } else {
-        console.log(
+        this.logger.log(
           `Skipping DB update for temporary project ID: ${projectId}`,
         );
       }
@@ -130,12 +144,10 @@ export class PdfController {
         },
         data: jsonData,
       };
-    } catch (e: any) {
-      console.error('PDF Upload Error:', e);
-      throw new HttpException(
-        e.message || 'Conversion failed',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (e: unknown) {
+      this.logger.error('PDF Upload Error:', e);
+      const message = e instanceof Error ? e.message : 'Conversion failed';
+      throw new InternalServerErrorException(message);
     }
   }
 
@@ -145,23 +157,19 @@ export class PdfController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<ExtractedPdfData> {
     if (!file) {
-      throw new HttpException('Nie przesłano pliku', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Nie przesłano pliku');
     }
 
     if (file.mimetype !== 'application/pdf') {
-      throw new HttpException(
-        'Plik musi być w formacie PDF',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Plik musi być w formacie PDF');
     }
 
     try {
       return await this.pdfService.parsePdf(file.buffer, file.originalname);
-    } catch {
-      throw new HttpException(
-        'Błąd podczas parsowania PDF',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Błąd podczas parsowania PDF';
+      throw new InternalServerErrorException(message);
     }
   }
 
@@ -200,10 +208,7 @@ export class PdfController {
     @UploadedFiles() files: Express.Multer.File[],
   ): Promise<BatchUploadResult> {
     if (!files || files.length === 0) {
-      throw new HttpException(
-        'Nie przesłano żadnych plików',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Nie przesłano żadnych plików');
     }
 
     // Filter only PDFs
@@ -214,9 +219,8 @@ export class PdfController {
     );
 
     if (pdfFiles.length === 0) {
-      throw new HttpException(
+      throw new BadRequestException(
         'Nie znaleziono plików PDF. Akceptowane formaty: PDF',
-        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -227,11 +231,13 @@ export class PdfController {
       }));
 
       return await this.pdfService.parseBatch(filesToParse);
-    } catch {
-      throw new HttpException(
-        'Błąd podczas przetwarzania plików',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Błąd podczas przetwarzania plików';
+      this.logger.error(`Batch upload failed`, err);
+      throw new InternalServerErrorException(message);
     }
   }
 }

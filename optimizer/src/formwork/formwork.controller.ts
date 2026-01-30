@@ -4,19 +4,16 @@ import {
   Body,
   Get,
   Param,
-  HttpException,
-  HttpStatus,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
   IsString,
   IsNumber,
   IsOptional,
   IsBoolean,
-  IsEnum,
-  IsArray,
   ValidateNested,
-  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FormworkService } from './formwork.service';
@@ -25,39 +22,8 @@ import type {
   FormworkCalculationParams,
   OptimizationResult,
 } from './interfaces/formwork.interface';
-import type { SlabData } from '../slab/interfaces/slab.interface';
-
-class DimensionsDto {
-  @IsNumber()
-  length!: number;
-
-  @IsNumber()
-  width!: number;
-
-  @IsNumber()
-  thickness!: number;
-
-  @IsNumber()
-  area!: number;
-}
-
-class AxesDto {
-  @IsArray()
-  @IsString({ each: true })
-  horizontal!: string[];
-
-  @IsArray()
-  @IsString({ each: true })
-  vertical!: string[];
-}
-
-class PointDto {
-  @IsNumber()
-  x!: number;
-
-  @IsNumber()
-  y!: number;
-}
+import { SlabData } from '../slab/interfaces/slab.interface';
+import { SlabDataDto } from '../slab/dto/slab.dto';
 
 class CalculateFormworkDto implements FormworkCalculationParams {
   @IsNumber()
@@ -94,34 +60,6 @@ class CalculateFormworkDto implements FormworkCalculationParams {
   public optimizeForWarehouse?: boolean;
 }
 
-class SlabDataDto {
-  @IsString()
-  public id!: string;
-
-  @ValidateNested()
-  @Type(() => DimensionsDto)
-  public dimensions!: DimensionsDto;
-
-  @IsString()
-  public type!: 'monolityczny' | 'teriva' | 'filigran' | 'zerowiec' | 'inny';
-
-  @IsArray()
-  public beams!: any[];
-
-  @IsArray()
-  public reinforcement!: any[];
-
-  @ValidateNested()
-  @Type(() => AxesDto)
-  public axes!: AxesDto;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PointDto)
-  public points?: PointDto[];
-}
-
 class CalculateRequestDto {
   @ValidateNested()
   @Type(() => SlabDataDto)
@@ -149,26 +87,21 @@ export class FormworkController {
   }
 
   @Post('calculate')
-  @ApiOperation({ summary: 'Oblicz układ szalunku dla stropu' })
-  @ApiBody({ type: CalculateRequestDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Obliczony układ szalunku',
-  })
-  public calculateFormwork(@Body() body: CalculateRequestDto): FormworkLayout {
+  @ApiOperation({ summary: 'Oblicz szalunek dla stropu' })
+  public async calculateFormwork(
+    @Body() body: CalculateRequestDto,
+  ): Promise<FormworkLayout> {
     const { slabData, params } = body;
 
     if (!slabData || !params) {
-      throw new HttpException(
+      throw new BadRequestException(
         'Wymagane dane stropu i parametry obliczeń',
-        HttpStatus.BAD_REQUEST,
       );
     }
 
-    const layout = this.formworkService.calculateFormwork(
-      slabData as unknown as SlabData,
-      params,
-    );
+    const slab = slabData as unknown as SlabData;
+
+    const layout = await this.formworkService.calculateFormwork(slab, params);
 
     // Zapisz layout do cache
     this.layouts.set(layout.id, layout);
@@ -182,16 +115,13 @@ export class FormworkController {
     status: 200,
     description: 'Wynik optymalizacji',
   })
-  public optimizeFormwork(
+  public async optimizeFormwork(
     @Param('layoutId') layoutId: string,
-  ): OptimizationResult {
+  ): Promise<OptimizationResult> {
     const layout = this.layouts.get(layoutId);
 
     if (!layout) {
-      throw new HttpException(
-        `Layout ${layoutId} nie znaleziony`,
-        HttpStatus.NOT_FOUND,
-      );
+      throw new NotFoundException(`Layout ${layoutId} nie znaleziony`);
     }
 
     return this.formworkService.optimize(layout);
@@ -203,10 +133,7 @@ export class FormworkController {
     const layout = this.layouts.get(layoutId);
 
     if (!layout) {
-      throw new HttpException(
-        `Layout ${layoutId} nie znaleziony`,
-        HttpStatus.NOT_FOUND,
-      );
+      throw new NotFoundException(`Layout ${layoutId} nie znaleziony`);
     }
 
     return layout;

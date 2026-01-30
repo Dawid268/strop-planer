@@ -7,8 +7,6 @@ import {
   Body,
   Param,
   Query,
-  HttpException,
-  HttpStatus,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -19,18 +17,19 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service';
-import { JwtAuthGuard } from '../auth/auth.guard';
-import type {
-  InventoryItem,
+import { AtGuard } from '../auth/auth.guard';
+import {
   CreateInventoryItemDto,
   UpdateInventoryItemDto,
-  InventoryFilter,
-  InventorySummary,
-} from './interfaces/inventory.interface';
+  InventoryFilterDto,
+  InventoryItemDto,
+} from './dto/inventory.dto';
+import { InventorySummary } from './interfaces/inventory.interface';
+import { BadRequestException } from '@nestjs/common';
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(AtGuard)
 @Controller('inventory')
 export class InventoryController {
   public constructor(private readonly inventoryService: InventoryService) {}
@@ -48,92 +47,71 @@ export class InventoryController {
     required: false,
     description: 'Filtr po producencie',
   })
-  public findAll(
-    @Query('type') type?: InventoryItem['type'],
-    @Query('system') system?: string,
-    @Query('manufacturer') manufacturer?: string,
-  ): InventoryItem[] {
-    const filter: InventoryFilter = {};
-    if (type) filter.type = type;
-    if (system) filter.system = system;
-    if (manufacturer) filter.manufacturer = manufacturer;
-
-    return this.inventoryService.findAll(
-      Object.keys(filter).length > 0 ? filter : undefined,
-    );
+  public async findAll(
+    @Query() filter: InventoryFilterDto,
+  ): Promise<InventoryItemDto[]> {
+    return this.inventoryService.findAll(filter);
   }
 
   @Get('summary')
   @ApiOperation({ summary: 'Podsumowanie stanu magazynowego' })
-  public getSummary(): InventorySummary {
+  public async getSummary(): Promise<InventorySummary> {
     return this.inventoryService.getSummary();
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Pobierz element po ID' })
-  public findOne(@Param('id') id: string): InventoryItem {
+  public async findOne(@Param('id') id: string): Promise<InventoryItemDto> {
     return this.inventoryService.findOne(id);
   }
 
   @Post()
   @ApiOperation({ summary: 'Dodaj nowy element do magazynu' })
   @ApiResponse({ status: 201, description: 'Element utworzony' })
-  public create(@Body() dto: CreateInventoryItemDto): InventoryItem {
+  public async create(
+    @Body() dto: CreateInventoryItemDto,
+  ): Promise<InventoryItemDto> {
     return this.inventoryService.create(dto);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Aktualizuj element magazynowy' })
-  public update(
+  public async update(
     @Param('id') id: string,
     @Body() dto: UpdateInventoryItemDto,
-  ): InventoryItem {
+  ): Promise<InventoryItemDto> {
     return this.inventoryService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Usuń element z magazynu' })
-  public delete(@Param('id') id: string): { message: string } {
-    this.inventoryService.delete(id);
+  public async delete(@Param('id') id: string): Promise<{ message: string }> {
+    await this.inventoryService.delete(id);
     return { message: `Element ${id} usunięty` };
   }
 
   @Post(':id/reserve')
   @ApiOperation({ summary: 'Zarezerwuj elementy' })
-  public reserve(
+  public async reserve(
     @Param('id') id: string,
     @Body('quantity') quantity: number,
-  ): InventoryItem {
+  ): Promise<InventoryItemDto> {
     if (!quantity || quantity <= 0) {
-      throw new HttpException(
-        'Ilość musi być większa od 0',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Ilość musi być większa od 0');
     }
-    try {
-      return this.inventoryService.reserve(id, quantity);
-    } catch (error) {
-      throw new HttpException((error as Error).message, HttpStatus.BAD_REQUEST);
-    }
+    return this.inventoryService.reserve(id, quantity);
   }
 
   @Post(':id/release')
   @ApiOperation({ summary: 'Zwolnij rezerwację' })
-  public release(
+  public async release(
     @Param('id') id: string,
     @Body('quantity') quantity: number,
-  ): InventoryItem {
+  ): Promise<InventoryItemDto> {
     if (!quantity || quantity <= 0) {
-      throw new HttpException(
-        'Ilość musi być większa od 0',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Ilość musi być większa od 0');
     }
-    try {
-      return this.inventoryService.release(id, quantity);
-    } catch (error) {
-      throw new HttpException((error as Error).message, HttpStatus.BAD_REQUEST);
-    }
+    return this.inventoryService.release(id, quantity);
   }
 
   @Get('available/for-project')
@@ -153,11 +131,11 @@ export class InventoryController {
     required: false,
     description: 'Preferowany system',
   })
-  public getAvailableForProject(
+  public async getAvailableForProject(
     @Query('panelArea') panelArea: number,
     @Query('props') props: number,
     @Query('system') system?: string,
-  ): InventoryItem[] {
+  ): Promise<InventoryItemDto[]> {
     return this.inventoryService.getAvailableForProject(
       panelArea,
       props,

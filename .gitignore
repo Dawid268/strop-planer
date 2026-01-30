@@ -35,3 +35,10 @@ ENV/
 # Project specific
 uploads/converted/*
 !uploads/converted/.gitkeep
+
+# Generated files
+uploads/
+logs/
+lint-report*.json
+debug_response.json
+data/*.db

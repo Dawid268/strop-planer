@@ -10,10 +10,16 @@ import { InkscapeConversionService } from './inkscape-conversion.service';
 
 const execAsync = promisify(exec);
 
+interface GeometryExtractionResult {
+  polygons?: Array<{ points: Array<{ x: number; y: number }> }>;
+  error?: string;
+  [key: string]: unknown;
+}
+
 @Injectable()
 export class GeometryService {
   private readonly logger = new Logger(GeometryService.name);
-  private readonly scriptsPath = path.join(__dirname, '../../src/scripts'); // Adjust based on build path
+  private readonly scriptsPath = path.join(process.cwd(), 'src/scripts');
 
   private jobs = new Map<string, Job>();
 
@@ -23,10 +29,10 @@ export class GeometryService {
     private readonly inkscapeService: InkscapeConversionService,
   ) {}
 
-  async startExtraction(
+  public startExtraction(
     pdfPath: string,
     projectId?: string,
-  ): Promise<{ jobId: string }> {
+  ): { jobId: string } {
     const jobId = Math.random().toString(36).substring(7);
     this.jobs.set(jobId, {
       id: jobId,
@@ -35,8 +41,7 @@ export class GeometryService {
       createdAt: new Date(),
     });
 
-    // Start background process without awaiting
-    this.processExtraction(jobId, pdfPath, projectId).catch((err) => {
+    void this.processExtraction(jobId, pdfPath, projectId).catch((err) => {
       this.logger.error(`Background processing failed for job ${jobId}`, err);
     });
 
@@ -64,16 +69,18 @@ export class GeometryService {
       message: 'Validating PDF path...',
     });
 
-    const isAbsolute = path.isAbsolute(pdfPath);
     let pdfAbsPath = pdfPath;
 
-    if (!isAbsolute) {
-      // Assume web-style relative path
-      const relativePath = pdfPath.startsWith('/')
-        ? pdfPath.substring(1)
-        : pdfPath;
-      pdfAbsPath = path.join(process.cwd(), relativePath);
+    // Handle web-style absolute paths (/uploads/...) or relative paths
+    if (pdfPath.startsWith('/uploads')) {
+      pdfAbsPath = path.join(process.cwd(), pdfPath.substring(1));
+    } else if (!path.isAbsolute(pdfPath)) {
+      pdfAbsPath = path.join(process.cwd(), pdfPath);
     }
+
+    this.logger.log(
+      `Resolved absolute path: ${pdfAbsPath} (cwd: ${process.cwd()})`,
+    );
 
     // Check if exists
     if (!fs.existsSync(pdfAbsPath)) {
@@ -84,8 +91,6 @@ export class GeometryService {
       });
       return;
     }
-
-    const svgPath = pdfAbsPath.replace('.pdf', '.svg');
 
     try {
       // 1. Convert PDF to SVG using InkscapeConversionService
@@ -133,17 +138,11 @@ export class GeometryService {
         message: 'Parsing results...',
       });
       try {
-        const result = JSON.parse(stdout);
-        this.updateJob(jobId, {
-          status: 'completed',
-          result,
-          message: 'Extraction successful',
-        });
+        const result = JSON.parse(stdout) as GeometryExtractionResult;
 
         if (projectId) {
           try {
             if (result && result.polygons) {
-              // COPY SVG to uploads
               const publicDir = path.join(process.cwd(), 'uploads/converted');
               if (!fs.existsSync(publicDir)) {
                 fs.mkdirSync(publicDir, { recursive: true });
@@ -153,8 +152,50 @@ export class GeometryService {
               fs.copyFileSync(validSvgPath, publicPath);
               const svgUrl = `/uploads/converted/${publicFileName}`;
 
+              const layerId = `layer-vectors-${Date.now()}`;
+              const editorData = {
+                tabs: [
+                  {
+                    id: `tab-${Date.now()}`,
+                    name: 'Strona 1',
+                    active: true,
+                    layers: [
+                      {
+                        id: layerId,
+                        name: 'Wektory (AI)',
+                        shapes: result.polygons.map((poly, idx) => ({
+                          id: `ai-poly-${Date.now()}-${idx}`,
+                          type: 'polygon',
+                          points: Array.isArray(poly)
+                            ? poly
+                            : poly.points || poly,
+                          x: 0,
+                          y: 0,
+                        })),
+                        isVisible: true,
+                        isLocked: false,
+                        opacity: 1,
+                        color: '#9c27b0',
+                        type: 'ai_vectors',
+                      },
+                      {
+                        id: `layer-user-${Date.now()}`,
+                        name: 'Warstwa użytkownika',
+                        shapes: [],
+                        isVisible: true,
+                        isLocked: false,
+                        opacity: 1,
+                        color: '#2196f3',
+                        type: 'user',
+                      },
+                    ],
+                  },
+                ],
+              };
+
               await this.projectRepository.update(projectId, {
                 extractedSlabGeometry: JSON.stringify(result),
+                editorData: JSON.stringify(editorData),
                 svgPath: svgUrl,
               });
               this.logger.log(`Extracted ${result.polygons?.length} polygons.`);
@@ -164,6 +205,12 @@ export class GeometryService {
                 );
               }
               this.logger.log(`Updated project ${projectId} with geometry`);
+
+              this.updateJob(jobId, {
+                status: 'completed',
+                result,
+                message: 'Extraction successful',
+              });
             } else if (result && result.error) {
               this.logger.warn(`Python script returned error: ${result.error}`);
               this.updateJob(jobId, {
@@ -174,15 +221,30 @@ export class GeometryService {
               this.logger.warn(
                 `Invalid result format: ${JSON.stringify(result)}`,
               );
+              this.updateJob(jobId, {
+                status: 'completed',
+                result,
+                message: 'Extraction completed (no polygons)',
+              });
             }
           } catch (dbError) {
             this.logger.error(
               `Failed to save geometry to project ${projectId}`,
               dbError,
             );
+            this.updateJob(jobId, {
+              status: 'failed',
+              message: 'Failed to save geometry to database',
+            });
           }
+        } else {
+          this.updateJob(jobId, {
+            status: 'completed',
+            result,
+            message: 'Extraction successful (no project to save)',
+          });
         }
-      } catch (e) {
+      } catch {
         this.logger.error('Failed to parse Python output', stdout);
         this.updateJob(jobId, {
           status: 'failed',
@@ -191,9 +253,11 @@ export class GeometryService {
       }
     } catch (error) {
       this.logger.error('Extraction failed', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.updateJob(jobId, {
         status: 'failed',
-        message: `Extraction failed: ${error.message}`,
+        message: `Extraction failed: ${errorMessage}`,
       });
     } finally {
       // Cleanup SVG? Keep for debug?
@@ -201,18 +265,14 @@ export class GeometryService {
     }
   }
 
-  // Legacy/synchronous method (deprecate or remove?)
-  // For now we assume controller calls startExtraction
-  async extractFromPdf(pdfPath: string): Promise<any> {
-    throw new Error('Use startExtraction via API');
-  }
+  // No legacy methods
 }
 
 export interface Job {
   id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   message: string;
-  result?: any;
+  result?: unknown;
   error?: string;
   createdAt: Date;
 }

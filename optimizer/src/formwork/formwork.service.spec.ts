@@ -58,8 +58,8 @@ describe('FormworkService', () => {
   });
 
   describe('calculateFormwork(slabData, params): FormworkLayout', () => {
-    it('should return FormworkLayout object with required properties', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should return FormworkLayout object with required properties', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('id');
@@ -68,8 +68,8 @@ describe('FormworkService', () => {
       expect(result).toHaveProperty('slabArea');
     });
 
-    it('should calculate elements array with valid element objects', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should calculate elements array with valid element objects', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
       expect(result.elements).toBeInstanceOf(Array);
       expect(result.elements.length).toBeGreaterThan(0);
@@ -80,46 +80,42 @@ describe('FormworkService', () => {
       }
     });
 
-    it('should include panel elements in calculation (or empty when no inventory)', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should include panel elements in calculation (or empty when no inventory)', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const panels = result.elements.filter(
-        (el: any) => el.elementType === 'panel',
-      );
+      const panels = result.elements.filter((el) => el.elementType === 'panel');
       expect(panels.length).toBeGreaterThanOrEqual(0);
     });
 
-    it('should include prop elements in calculation', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should include prop elements in calculation', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const props = result.elements.filter(
-        (el: any) => el.elementType === 'prop',
-      );
+      const props = result.elements.filter((el) => el.elementType === 'prop');
       expect(props.length).toBeGreaterThan(0);
     });
 
-    it('should use preferred system when specified', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should use preferred system when specified', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
       expect(result.system).toBe('PERI_SKYDECK');
     });
 
-    it('should calculate slabArea correctly', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should calculate slabArea correctly', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
       expect(result.slabArea).toBe(80);
     });
 
-    it('should include estimated cost', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should include estimated cost', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
       expect(result).toHaveProperty('estimatedCost');
       expect(typeof result.estimatedCost).toBe('number');
       expect(result.estimatedCost).toBeGreaterThanOrEqual(0);
     });
 
-    it('should include total weight', () => {
-      const result = service.calculateFormwork(mockSlabData, mockParams);
+    it('should include total weight', async () => {
+      const result = await service.calculateFormwork(mockSlabData, mockParams);
 
       expect(result).toHaveProperty('totalWeight');
       expect(typeof result.totalWeight).toBe('number');
@@ -127,10 +123,10 @@ describe('FormworkService', () => {
   });
 
   describe('optimize(layout: FormworkLayout): OptimizationResult', () => {
-    it('should return OptimizationResult object', () => {
-      const layout = service.calculateFormwork(mockSlabData, mockParams);
+    it('should return OptimizationResult object', async () => {
+      const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const result = service.optimize(layout);
+      const result = await service.optimize(layout);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('originalLayout');
@@ -140,20 +136,20 @@ describe('FormworkService', () => {
       expect(result).toHaveProperty('elementReduction');
     });
 
-    it('should return savings as numeric values', () => {
-      const layout = service.calculateFormwork(mockSlabData, mockParams);
+    it('should return savings as numeric values', async () => {
+      const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const result = service.optimize(layout);
+      const result = await service.optimize(layout);
 
       expect(typeof result.areaSavings).toBe('number');
       expect(typeof result.costSavings).toBe('number');
       expect(typeof result.elementReduction).toBe('number');
     });
 
-    it('should return optimized layout with elements', () => {
-      const layout = service.calculateFormwork(mockSlabData, mockParams);
+    it('should return optimized layout with elements', async () => {
+      const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const result = service.optimize(layout);
+      const result = await service.optimize(layout);
 
       expect(result.optimizedLayout).toHaveProperty('elements');
       expect(result.optimizedLayout.elements).toBeInstanceOf(Array);
@@ -161,21 +157,21 @@ describe('FormworkService', () => {
   });
 
   describe('generateAlternatives(original: FormworkLayout): FormworkLayout[]', () => {
-    it('should return array of alternative layouts', () => {
-      const layout = service.calculateFormwork(mockSlabData, mockParams);
+    it('should return array of alternative layouts', async () => {
+      const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const alternatives = service.generateAlternatives(layout);
+      const alternatives = await service.generateAlternatives(layout);
 
       expect(alternatives).toBeInstanceOf(Array);
     });
 
-    it('should return layouts with different systems', () => {
-      const layout = service.calculateFormwork(mockSlabData, mockParams);
+    it('should return layouts with different systems', async () => {
+      const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const alternatives = service.generateAlternatives(layout);
+      const alternatives = await service.generateAlternatives(layout);
 
       if (alternatives.length > 0) {
-        alternatives.forEach((alt: any) => {
+        alternatives.forEach((alt) => {
           expect(alt).toHaveProperty('system');
           expect(alt).toHaveProperty('elements');
         });
@@ -184,8 +180,8 @@ describe('FormworkService', () => {
   });
 
   describe('calculateFormwork with polygon points', () => {
-    it('should handle slab data with polygon points', () => {
-      const result = service.calculateFormwork(
+    it('should handle slab data with polygon points', async () => {
+      const result = await service.calculateFormwork(
         mockSlabDataWithPolygon,
         mockParams,
       );
@@ -195,8 +191,8 @@ describe('FormworkService', () => {
       expect(result.elements.length).toBeGreaterThan(0);
     });
 
-    it('should work with optimizeForWarehouse param', () => {
-      const result = service.calculateFormwork(
+    it('should work with optimizeForWarehouse param', async () => {
+      const result = await service.calculateFormwork(
         mockSlabDataWithPolygon,
         mockParamsOptimizeForWarehouse,
       );

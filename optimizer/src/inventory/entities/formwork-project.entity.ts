@@ -8,6 +8,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
+import { SlabType } from '../../slab/enums/slab.enums';
+import { AutoMap } from '@automapper/classes';
 
 @Entity('formwork_projects')
 export class FormworkProjectEntity {
@@ -20,6 +22,7 @@ export class FormworkProjectEntity {
   @Column({ type: 'text', nullable: true })
   public description?: string;
 
+  @AutoMap()
   @Column({ length: 50, default: 'draft' })
   public status!: 'draft' | 'calculated' | 'optimized' | 'sent' | 'completed';
 
@@ -36,8 +39,13 @@ export class FormworkProjectEntity {
   @Column({ type: 'float' })
   public floorHeight!: number;
 
-  @Column({ length: 30, default: 'monolityczny' })
-  public slabType!: string;
+  @AutoMap()
+  @Column({
+    type: 'simple-enum',
+    enum: SlabType,
+    default: SlabType.MONOLITHIC,
+  })
+  public slabType!: SlabType;
 
   // Wybrany system szalunkowy
   @Column({ length: 30, nullable: true })
@@ -90,4 +98,7 @@ export class FormworkProjectEntity {
 
   @UpdateDateColumn()
   public updatedAt!: Date;
+
+  @Column({ type: 'text', nullable: true })
+  public editorData?: string;
 }

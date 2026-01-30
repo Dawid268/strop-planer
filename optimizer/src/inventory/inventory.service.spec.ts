@@ -1,269 +1,328 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
+import { InventoryRepository } from './repositories/inventory.repository';
+import { getMapperToken } from '@automapper/nestjs';
+import { InventoryItemEntity } from './entities/inventory-item.entity';
+import { createMapper, createMap, forMember, mapFrom } from '@automapper/core';
+import { classes } from '@automapper/classes';
+import { InventoryItemDto, CreateInventoryItemDto } from './dto/inventory.dto';
+import { ItemType, ItemCondition } from './enums/inventory.enums';
 
-/**
- * Integration tests for InventoryService (uses internal Map storage)
- * Testing based on method signatures and actual InventoryItem interface
- */
 describe('InventoryService', () => {
   let service: InventoryService;
+  let repository: Partial<InventoryRepository>;
+
+  const mockItem: InventoryItemEntity = {
+    id: 'item-123',
+    name: 'Test Panel',
+    catalogCode: 'TEST-001',
+    type: ItemType.PANEL,
+    system: 'SKYDECK',
+    manufacturer: 'PERI',
+    quantityAvailable: 100,
+    quantityReserved: 0,
+    isActive: true,
+    weight: 10,
+    dailyRentPrice: 5,
+    condition: ItemCondition.GOOD,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    dimensionLength: 150,
+    dimensionWidth: 75,
+  } as InventoryItemEntity;
+
+  const mockMapper = createMapper({
+    strategyInitializer: classes(),
+  });
+
+  // Register mappings for tests
+  createMap(mockMapper, InventoryItemEntity, InventoryItemDto);
+  createMap(
+    mockMapper,
+    CreateInventoryItemDto,
+    InventoryItemEntity,
+    forMember(
+      (d) => d.dimensionLength,
+      mapFrom((s) => s.dimensions?.length),
+    ),
+    forMember(
+      (d) => d.dimensionWidth,
+      mapFrom((s) => s.dimensions?.width),
+    ),
+    forMember(
+      (d) => d.dimensionHeight,
+      mapFrom((s) => s.dimensions?.height),
+    ),
+  );
 
   beforeEach(async () => {
+    repository = {
+      findAll: jest.fn().mockResolvedValue([mockItem]),
+      findById: jest.fn().mockResolvedValue(mockItem),
+      create: jest.fn().mockResolvedValue(mockItem),
+      update: jest.fn().mockResolvedValue(mockItem),
+      delete: jest.fn().mockResolvedValue(true),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [InventoryService],
+      providers: [
+        InventoryService,
+        { provide: InventoryRepository, useValue: repository },
+        { provide: getMapperToken(), useValue: mockMapper },
+      ],
     }).compile();
 
     service = module.get<InventoryService>(InventoryService);
   });
 
-  describe('findAll(filter?: InventoryFilter): InventoryItem[]', () => {
-    it('should return array of inventory items (seeded data)', () => {
-      const result = service.findAll();
-
+  describe('findAll', () => {
+    it('should return array of items', async () => {
+      const result = await service.findAll();
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toBeGreaterThan(0);
     });
+  });
 
-    it('should filter by type when filter provided', () => {
-      const result = service.findAll({ type: 'panel' });
-
+  describe('findOne', () => {
+    it('should return item when found', async () => {
+      const result = await service.findOne('item-123');
       expect(result).toBeDefined();
-      expect(result.every((item) => item.type === 'panel')).toBe(true);
-    });
-
-    it('should filter by system when filter provided', () => {
-      const result = service.findAll({ system: 'SKYDECK' });
-
-      expect(result).toBeDefined();
-      if (result.length > 0) {
-        expect(result.every((item) => item.system === 'SKYDECK')).toBe(true);
-      }
-    });
-
-    it('should filter by manufacturer when filter provided', () => {
-      const result = service.findAll({ manufacturer: 'PERI' });
-
-      expect(result).toBeDefined();
-      if (result.length > 0) {
-        expect(result.every((item) => item.manufacturer === 'PERI')).toBe(true);
-      }
+      expect(result.id).toBe('item-123');
     });
   });
 
-  describe('findOne(id: string): InventoryItem', () => {
-    it('should return item when found', () => {
-      // Get first item from seeded data
-      const allItems = service.findAll();
-      if (allItems.length > 0) {
-        const result = service.findOne(allItems[0].id);
+  describe('create', () => {
+    it('should create item', async () => {
+      const dto = {
+        name: 'New Item',
+        catalogCode: 'NEW-001',
+        type: ItemType.PANEL,
+        system: 'SKYDECK',
+        manufacturer: 'PERI',
+        quantityAvailable: 50,
+        weight: 5,
+        dailyRentPrice: 2,
+      };
+      (repository.create as jest.Mock).mockResolvedValue({
+        ...mockItem,
+        ...dto,
+      });
 
-        expect(result).toBeDefined();
-        expect(result.id).toBe(allItems[0].id);
-      }
+      const result = await service.create(dto);
+      expect(result).toBeDefined();
+      expect(result.name).toBe('New Item');
+    });
+  });
+
+  describe('update', () => {
+    it('should update existing item', async () => {
+      const updateDto = { name: 'Updated Name' };
+      (repository.findById as jest.Mock).mockResolvedValue(mockItem);
+      (repository.update as jest.Mock).mockResolvedValue({
+        ...mockItem,
+        ...updateDto,
+      });
+
+      const result = await service.update('item-123', updateDto);
+
+      expect(result).toBeDefined();
+      expect(repository.update).toHaveBeenCalledWith(
+        'item-123',
+        expect.any(Object),
+      );
     });
 
-    it('should throw NotFoundException when item not found', () => {
-      expect(() => service.findOne('non-existent-id')).toThrow(
-        NotFoundException,
+    it('should throw NotFoundException if item not found', async () => {
+      (repository.findById as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.update('non-existent', { name: 'Test' }),
+      ).rejects.toThrow('Element non-existent nie znaleziony');
+    });
+
+    it('should throw NotFoundException if update fails', async () => {
+      (repository.findById as jest.Mock).mockResolvedValue(mockItem);
+      (repository.update as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.update('item-123', { name: 'Test' }),
+      ).rejects.toThrow('Failed to update element item-123');
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete existing item', async () => {
+      (repository.delete as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.delete('item-123')).resolves.not.toThrow();
+      expect(repository.delete).toHaveBeenCalledWith('item-123');
+    });
+
+    it('should throw NotFoundException if item not found', async () => {
+      (repository.delete as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.delete('non-existent')).rejects.toThrow(
+        'Element non-existent nie znaleziony',
       );
     });
   });
 
-  describe('create(dto: CreateInventoryItemDto): InventoryItem', () => {
-    it('should create and return new inventory item with required properties', () => {
-      const createDto = {
-        catalogCode: 'SKD-100-60',
-        name: 'Test Panel TDD',
-        type: 'panel' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        dimensions: { length: 90, width: 60 },
-        quantityAvailable: 30,
-        weight: 8.5,
-        dailyRentPrice: 25,
+  describe('reserve', () => {
+    it('should reserve quantity when available', async () => {
+      const itemWithStock = {
+        ...mockItem,
+        quantityAvailable: 100,
+        quantityReserved: 10,
       };
+      (repository.findById as jest.Mock).mockResolvedValue(itemWithStock);
+      (repository.update as jest.Mock).mockResolvedValue({
+        ...itemWithStock,
+        quantityReserved: 20,
+      });
 
-      const result = service.create(createDto);
+      const result = await service.reserve('item-123', 10);
 
       expect(result).toBeDefined();
-      expect(result.name).toBe('Test Panel TDD');
-      expect(result.catalogCode).toBe('SKD-100-60');
-      expect(result.id).toBeDefined();
+      expect(repository.update).toHaveBeenCalledWith('item-123', {
+        quantityReserved: 20,
+      });
     });
 
-    it('should set quantityReserved to 0 initially', () => {
-      const createDto = {
-        catalogCode: 'SKD-TEST-2',
-        name: 'Test Panel Zero',
-        type: 'panel' as const,
-        system: 'MULTIFLEX',
-        manufacturer: 'PERI',
-        quantityAvailable: 50,
-        weight: 10,
-        dailyRentPrice: 30,
+    it('should throw NotFoundException if item not found', async () => {
+      (repository.findById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.reserve('non-existent', 10)).rejects.toThrow(
+        'Element non-existent nie znaleziony',
+      );
+    });
+
+    it('should throw error if quantity exceeds available', async () => {
+      const itemWithLowStock = {
+        ...mockItem,
+        quantityAvailable: 10,
+        quantityReserved: 5,
       };
+      (repository.findById as jest.Mock).mockResolvedValue(itemWithLowStock);
 
-      const result = service.create(createDto);
-
-      expect(result.quantityReserved).toBe(0);
+      await expect(service.reserve('item-123', 10)).rejects.toThrow(
+        /Niewystarczająca ilość/,
+      );
     });
   });
 
-  describe('update(id: string, dto: UpdateInventoryItemDto): InventoryItem', () => {
-    it('should update and return modified item', () => {
-      // Create item first
-      const created = service.create({
-        catalogCode: 'UPD-TEST-01',
-        name: 'Update Test',
-        type: 'panel' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        quantityAvailable: 20,
-        weight: 9,
-        dailyRentPrice: 22,
+  describe('release', () => {
+    it('should release reservation', async () => {
+      const itemWithReservation = { ...mockItem, quantityReserved: 20 };
+      (repository.findById as jest.Mock).mockResolvedValue(itemWithReservation);
+      (repository.update as jest.Mock).mockResolvedValue({
+        ...itemWithReservation,
+        quantityReserved: 10,
       });
 
-      const result = service.update(created.id, { quantityAvailable: 60 });
-
-      expect(result.quantityAvailable).toBe(60);
-      expect(result.id).toBe(created.id);
-    });
-
-    it('should throw NotFoundException when item does not exist', () => {
-      expect(() =>
-        service.update('non-existent', { quantityAvailable: 10 }),
-      ).toThrow(NotFoundException);
-    });
-  });
-
-  describe('delete(id: string): void', () => {
-    it('should delete item without error', () => {
-      // Create item first
-      const created = service.create({
-        catalogCode: 'DEL-TEST-01',
-        name: 'Delete Test',
-        type: 'prop' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        quantityAvailable: 10,
-        weight: 5,
-        dailyRentPrice: 15,
-      });
-
-      expect(() => service.delete(created.id)).not.toThrow();
-
-      // Verify deleted
-      expect(() => service.findOne(created.id)).toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException when item does not exist', () => {
-      expect(() => service.delete('non-existent')).toThrow(NotFoundException);
-    });
-  });
-
-  describe('reserve(id: string, quantity: number): InventoryItem', () => {
-    it('should reserve items and update quantityReserved', () => {
-      // Create item first
-      const created = service.create({
-        catalogCode: 'RES-TEST-01',
-        name: 'Reserve Test',
-        type: 'panel' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        quantityAvailable: 50,
-        weight: 8,
-        dailyRentPrice: 25,
-      });
-
-      const result = service.reserve(created.id, 10);
-
-      expect(result.quantityReserved).toBe(10);
-    });
-
-    it('should throw error when quantity exceeds available', () => {
-      const created = service.create({
-        catalogCode: 'RES-OVER-01',
-        name: 'Reserve Overflow Test',
-        type: 'panel' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        quantityAvailable: 10,
-        weight: 8,
-        dailyRentPrice: 25,
-      });
-
-      expect(() => service.reserve(created.id, 100)).toThrow();
-    });
-  });
-
-  describe('release(id: string, quantity: number): InventoryItem', () => {
-    it('should release reserved items and update quantityReserved', () => {
-      // Create and reserve first
-      const created = service.create({
-        catalogCode: 'REL-TEST-01',
-        name: 'Release Test',
-        type: 'panel' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        quantityAvailable: 50,
-        weight: 8,
-        dailyRentPrice: 25,
-      });
-      service.reserve(created.id, 20);
-
-      const result = service.release(created.id, 10);
-
-      expect(result.quantityReserved).toBe(10);
-    });
-
-    it('should throw error when quantity exceeds reserved', () => {
-      const created = service.create({
-        catalogCode: 'REL-OVER-01',
-        name: 'Release Overflow Test',
-        type: 'panel' as const,
-        system: 'SKYDECK',
-        manufacturer: 'PERI',
-        quantityAvailable: 10,
-        weight: 8,
-        dailyRentPrice: 25,
-      });
-
-      expect(() => service.release(created.id, 100)).toThrow();
-    });
-  });
-
-  describe('getSummary(): InventorySummary', () => {
-    it('should return summary with required properties', () => {
-      const result = service.getSummary();
-
-      expect(result).toHaveProperty('totalItems');
-      expect(result).toHaveProperty('byType');
-      expect(result.totalItems).toBeGreaterThan(0);
-    });
-
-    it('should return totalValue number', () => {
-      const result = service.getSummary();
-
-      expect(result).toHaveProperty('totalValue');
-      expect(typeof result.totalValue).toBe('number');
-    });
-  });
-
-  describe('getAvailableForProject(panelArea, props, system?): InventoryItem[]', () => {
-    it('should return list of available items for project requirements', () => {
-      const result = service.getAvailableForProject(100, 20);
-
-      expect(result).toBeInstanceOf(Array);
-    });
-
-    it('should filter by system when provided', () => {
-      const result = service.getAvailableForProject(100, 20, 'SKYDECK');
+      const result = await service.release('item-123', 10);
 
       expect(result).toBeDefined();
-      if (result.length > 0) {
-        expect(result.every((item) => item.system === 'SKYDECK')).toBe(true);
-      }
+    });
+
+    it('should throw error if trying to release more than reserved', async () => {
+      const itemWithReservation = { ...mockItem, quantityReserved: 5 };
+      (repository.findById as jest.Mock).mockResolvedValue(itemWithReservation);
+
+      await expect(service.release('item-123', 10)).rejects.toThrow(
+        /Nie można zwolnić/,
+      );
+    });
+  });
+
+  describe('getSummary', () => {
+    it('should return inventory summary', async () => {
+      const items = [
+        {
+          ...mockItem,
+          type: 'panel',
+          system: 'SKYDECK',
+          quantityAvailable: 100,
+          quantityReserved: 10,
+          condition: 'dobra',
+          isActive: true,
+        },
+        {
+          ...mockItem,
+          id: 'item-2',
+          type: 'prop',
+          system: 'DOKAFLEX',
+          quantityAvailable: 50,
+          quantityReserved: 5,
+          condition: 'do_naprawy',
+          isActive: true,
+        },
+      ];
+      (repository.findAll as jest.Mock).mockResolvedValue(items);
+
+      const result = await service.getSummary();
+
+      expect(result).toBeDefined();
+      expect(result.totalItems).toBe(150);
+      expect(result.byType).toBeDefined();
+      expect(result.bySystem).toBeDefined();
+    });
+
+    it('should handle empty inventory', async () => {
+      (repository.findAll as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getSummary();
+
+      expect(result.totalItems).toBe(0);
+      expect(result.totalValue).toBe(0);
+    });
+  });
+
+  describe('getAvailableForProject', () => {
+    it('should return available items for project', async () => {
+      const activeItems = [
+        {
+          ...mockItem,
+          quantityAvailable: 100,
+          quantityReserved: 10,
+          isActive: true,
+        },
+      ];
+      (repository.findAll as jest.Mock).mockResolvedValue(activeItems);
+
+      const result = await service.getAvailableForProject(50, 20, 'SKYDECK');
+
+      expect(result).toBeDefined();
+      expect(repository.findAll).toHaveBeenCalledWith({
+        isActive: true,
+        system: 'SKYDECK',
+      });
+    });
+
+    it('should filter out fully reserved items', async () => {
+      const items = [
+        { ...mockItem, quantityAvailable: 100, quantityReserved: 100 },
+        {
+          ...mockItem,
+          id: 'item-2',
+          quantityAvailable: 50,
+          quantityReserved: 10,
+        },
+      ];
+      (repository.findAll as jest.Mock).mockResolvedValue(items);
+
+      const result = await service.getAvailableForProject(50, 20);
+
+      expect(result.length).toBe(1);
+    });
+  });
+
+  describe('findOne edge cases', () => {
+    it('should throw NotFoundException if item not found', async () => {
+      (repository.findById as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.findOne('non-existent')).rejects.toThrow(
+        'Element non-existent nie znaleziony',
+      );
     });
   });
 });

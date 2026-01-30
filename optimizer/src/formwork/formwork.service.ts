@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { Injectable, Logger } from '@nestjs/common';
 import {
   FormworkLayout,
@@ -11,7 +12,7 @@ import {
 } from './interfaces/formwork.interface';
 import { SlabData } from '../slab/interfaces/slab.interface';
 import { InventoryService } from '../inventory/inventory.service';
-import type { InventoryItem } from '../inventory/interfaces/inventory.interface';
+import { InventoryItemEntity } from '../inventory/entities/inventory-item.entity';
 
 @Injectable()
 export class FormworkService {
@@ -22,14 +23,14 @@ export class FormworkService {
   /**
    * Oblicza wymagany układ szalunku dla danego stropu
    */
-  public calculateFormwork(
+  public async calculateFormwork(
     slabData: SlabData & { points?: Array<{ x: number; y: number }> },
     params: FormworkCalculationParams,
-  ): FormworkLayout {
+  ): Promise<FormworkLayout> {
     const system = params.preferredSystem || 'PERI_SKYDECK';
 
     // Pobierz elementy z magazynu
-    const inventoryItems = this.inventoryService.findAll({
+    const inventoryItems = await this.inventoryService.findAll({
       system,
       isActive: true,
       minQuantity: 1,
@@ -37,14 +38,14 @@ export class FormworkService {
 
     const catalog = {
       panels: inventoryItems
-        .filter((i) => i.type === 'panel')
-        .map(this.mapInventoryToPanel),
+        .filter((i: InventoryItemEntity) => i.type === 'panel')
+        .map((i: InventoryItemEntity) => this.mapInventoryToPanel(i)),
       props: inventoryItems
-        .filter((i) => i.type === 'prop')
-        .map(this.mapInventoryToProp),
+        .filter((i: InventoryItemEntity) => i.type === 'prop')
+        .map((i: InventoryItemEntity) => this.mapInventoryToProp(i)),
       beams: inventoryItems
-        .filter((i) => i.type === 'beam')
-        .map(this.mapInventoryToBeam),
+        .filter((i: InventoryItemEntity) => i.type === 'beam')
+        .map((i: InventoryItemEntity) => this.mapInventoryToBeam(i)),
     };
 
     this.logger.log(
@@ -119,36 +120,35 @@ export class FormworkService {
     };
   }
 
-  // Helper mappings
-  private mapInventoryToPanel(item: InventoryItem): FormworkPanel {
+  private mapInventoryToPanel(item: InventoryItemEntity): FormworkPanel {
     return {
       id: item.catalogCode,
-      system: item.system as any,
-      length: item.dimensions.length || 0,
-      width: item.dimensions.width || 0,
-      area: (item.dimensions.length! * item.dimensions.width!) / 10000,
+      system: item.system as FormworkSystemType,
+      length: item.dimensionLength || 0,
+      width: item.dimensionWidth || 0,
+      area: ((item.dimensionLength || 0) * (item.dimensionWidth || 0)) / 10000,
       loadCapacity: item.loadCapacity!,
       weight: item.weight,
       dailyRentCost: item.dailyRentPrice,
     };
   }
 
-  private mapInventoryToProp(item: InventoryItem): FormworkProp {
+  private mapInventoryToProp(item: InventoryItemEntity): FormworkProp {
     // Parsowanie zakresu wysokości z nazwy lub użycie custom fields jeśli by były
     // Tutaj prosta heurystyka
     return {
       type: 'eurostempel',
       minHeight: 200,
-      maxHeight: item.dimensions.height || 350,
+      maxHeight: item.dimensionHeight || 350,
       loadCapacity: item.loadCapacity!,
       weight: item.weight,
     };
   }
 
-  private mapInventoryToBeam(item: InventoryItem): FormworkBeam {
+  private mapInventoryToBeam(item: InventoryItemEntity): FormworkBeam {
     return {
       type: 'H20',
-      length: item.dimensions.length || 240,
+      length: item.dimensionLength || 240,
       supportSpacing: 150,
       bendingCapacity: 6.0,
     };
@@ -162,7 +162,7 @@ export class FormworkService {
   private calculatePanelsForPolygon(
     points: Array<{ x: number; y: number }>,
     availablePanels: FormworkPanel[],
-    inventoryState: InventoryItem[],
+    inventoryState: InventoryItemEntity[],
   ): { elements: FormworkElement[]; totalWeight: number; totalCost: number } {
     if (availablePanels.length === 0)
       return { elements: [], totalWeight: 0, totalCost: 0 };
@@ -183,7 +183,7 @@ export class FormworkService {
     const placedRects: Array<{ x: number; y: number; w: number; h: number }> =
       [];
     const inventoryCounts = new Map<string, number>();
-    inventoryState.forEach((i) =>
+    inventoryState.forEach((i: InventoryItemEntity) =>
       inventoryCounts.set(i.catalogCode, i.quantityAvailable),
     );
 
@@ -250,22 +250,6 @@ export class FormworkService {
       minY: Math.min(...ys),
       maxY: Math.max(...ys),
     };
-  }
-
-  private isRectInPolygon(
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    poly: Array<{ x: number; y: number }>,
-  ): boolean {
-    // Check all 4 corners
-    return (
-      this.isPointInPolygon(x, y, poly) &&
-      this.isPointInPolygon(x + w, y, poly) &&
-      this.isPointInPolygon(x, y + h, poly) &&
-      this.isPointInPolygon(x + w, y + h, poly)
-    );
   }
 
   private isPointInPolygon(
@@ -512,7 +496,7 @@ export class FormworkService {
   /**
    * Optymalizuje układ szalunku
    */
-  public optimize(layout: FormworkLayout): OptimizationResult {
+  public async optimize(layout: FormworkLayout): Promise<OptimizationResult> {
     this.logger.log(`Optimizing formwork layout: ${layout.id}`);
 
     // Klon oryginalnego layoutu
@@ -586,18 +570,15 @@ export class FormworkService {
         ((originalElementCount - optimizedElementCount) /
           originalElementCount) *
         100,
-      recommendations: this.generateRecommendations(layout, optimizedLayout),
-      alternatives: this.generateAlternatives(layout),
+      recommendations: this.generateRecommendations(layout),
+      alternatives: await this.generateAlternatives(layout),
     };
   }
 
   /**
    * Generuje rekomendacje optymalizacyjne
    */
-  private generateRecommendations(
-    original: FormworkLayout,
-    optimized: FormworkLayout,
-  ): string[] {
+  private generateRecommendations(original: FormworkLayout): string[] {
     const recommendations: string[] = [];
 
     // Sprawdź czy można użyć większych paneli
@@ -643,7 +624,9 @@ export class FormworkService {
   /**
    * Generuje alternatywne rozwiązania
    */
-  private generateAlternatives(original: FormworkLayout): FormworkLayout[] {
+  private async generateAlternatives(
+    original: FormworkLayout,
+  ): Promise<FormworkLayout[]> {
     const alternatives: FormworkLayout[] = [];
 
     // Alternatywa z innym systemem
@@ -654,7 +637,7 @@ export class FormworkService {
 
     for (const altSystem of alternativeSystems) {
       if (altSystem !== original.system) {
-        const altLayout = this.recalculateWithSystem(original, altSystem);
+        const altLayout = await this.recalculateWithSystem(original, altSystem);
         if (altLayout) {
           alternatives.push(altLayout);
         }
@@ -667,11 +650,11 @@ export class FormworkService {
   /**
    * Przelicza układ z innym systemem
    */
-  private recalculateWithSystem(
+  private async recalculateWithSystem(
     original: FormworkLayout,
     newSystem: FormworkSystemType,
-  ): FormworkLayout | null {
-    const inventoryItems = this.inventoryService.findAll({
+  ): Promise<FormworkLayout | null> {
+    const inventoryItems = await this.inventoryService.findAll({
       system: newSystem,
       isActive: true,
       minQuantity: 1,
@@ -682,8 +665,8 @@ export class FormworkService {
     }
 
     const panels = inventoryItems
-      .filter((i) => i.type === 'panel')
-      .map(this.mapInventoryToPanel);
+      .filter((i: InventoryItemEntity) => i.type === 'panel')
+      .map((i: InventoryItemEntity) => this.mapInventoryToPanel(i));
 
     if (panels.length === 0) return null;
 

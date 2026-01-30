@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { FormworkProjectEntity } from '../inventory/entities/formwork-project.entity';
+import { Repository } from 'typeorm';
 
 /**
  * Black-box tests for ProjectsService
@@ -10,7 +11,10 @@ import { FormworkProjectEntity } from '../inventory/entities/formwork-project.en
  */
 describe('ProjectsService', () => {
   let service: ProjectsService;
-  let mockRepository: any;
+  let mockRepository: Record<
+    keyof Repository<FormworkProjectEntity>,
+    jest.Mock
+  >;
 
   const mockUserId = 'user-123';
   const mockProjectId = 'project-456';
@@ -253,6 +257,32 @@ describe('ProjectsService', () => {
 
       expect(result.status).toBe('optimized');
       expect(result.optimizationResult).toBeDefined();
+    });
+  });
+
+  describe('Editor Data Management', () => {
+    it('should return null editorData if not set', async () => {
+      mockRepository.findOne.mockResolvedValue(mockProject);
+      const result = await service.findOne(mockProjectId, mockUserId);
+      expect(result.editorData).toBeUndefined();
+    });
+
+    it('should save editor data as JSON string', async () => {
+      const editorData = { tabs: [{ id: '1', layers: [] }] };
+      mockRepository.findOne.mockResolvedValue(mockProject);
+      mockRepository.save.mockImplementation((p) => Promise.resolve(p));
+
+      await service.update(
+        mockProjectId,
+        { editorData: JSON.stringify(editorData) },
+        mockUserId,
+      );
+
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          editorData: JSON.stringify(editorData),
+        }),
+      );
     });
   });
 });

@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { FormworkProjectEntity } from '../inventory/entities/formwork-project.entity';
+import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.entity';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
+import { SlabType } from '../slab/enums/slab.enums';
 
 @Injectable()
 export class ProjectsService {
@@ -36,10 +37,16 @@ export class ProjectsService {
     userId: string,
   ): Promise<FormworkProjectEntity> {
     const project = this.projectsRepository.create({
-      ...dto,
+      name: dto.name,
+      description: dto.description,
+      slabLength: dto.slabLength,
+      slabWidth: dto.slabWidth,
+      slabThickness: dto.slabThickness,
+      floorHeight: dto.floorHeight,
+      formworkSystem: dto.formworkSystem,
       userId,
       status: 'draft',
-      slabType: dto.slabType || 'monolityczny',
+      slabType: (dto.slabType as SlabType) || SlabType.MONOLITHIC,
     });
     return this.projectsRepository.save(project);
   }

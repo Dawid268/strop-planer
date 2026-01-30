@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 import { FormworkController } from './formwork.controller';
 import { FormworkService } from './formwork.service';
 
@@ -78,29 +78,31 @@ describe('FormworkController', () => {
       },
     };
 
-    it('should return FormworkLayout on valid request', () => {
-      const result = controller.calculateFormwork(validRequest);
+    it('should return FormworkLayout on valid request', async () => {
+      const result = await controller.calculateFormwork(validRequest);
 
       expect(result).toBeDefined();
       expect(formworkServiceMock.calculateFormwork).toHaveBeenCalled();
     });
 
-    it('should throw BAD_REQUEST when slabData is missing', () => {
-      expect(() => {
-        controller.calculateFormwork({ params: validRequest.params } as any);
-      }).toThrow(HttpException);
+    it('should throw BAD_REQUEST when slabData is missing', async () => {
+      await expect(
+        controller.calculateFormwork({
+          params: validRequest.params,
+        } as unknown as CalculateRequestDto),
+      ).rejects.toThrow(HttpException);
     });
 
-    it('should throw BAD_REQUEST when params is missing', () => {
-      expect(() => {
+    it('should throw BAD_REQUEST when params is missing', async () => {
+      await expect(
         controller.calculateFormwork({
           slabData: validRequest.slabData,
-        } as any);
-      }).toThrow(HttpException);
+        } as unknown as CalculateRequestDto),
+      ).rejects.toThrow(HttpException);
     });
 
-    it('should cache layout for later retrieval', () => {
-      controller.calculateFormwork(validRequest);
+    it('should cache layout for later retrieval', async () => {
+      await controller.calculateFormwork(validRequest);
 
       // Layout should be accessible via getLayout
       const layout = controller.getLayout(mockLayout.id);
@@ -110,9 +112,9 @@ describe('FormworkController', () => {
   });
 
   describe('POST /formwork/optimize/:layoutId - optimizeFormwork()', () => {
-    it('should return OptimizationResult for existing layout', () => {
+    it('should return OptimizationResult for existing layout', async () => {
       // First create a layout
-      controller.calculateFormwork({
+      await controller.calculateFormwork({
         slabData: {
           id: 'slab-123',
           dimensions: { length: 10, width: 8, thickness: 0.25, area: 80 },
@@ -129,7 +131,7 @@ describe('FormworkController', () => {
         },
       });
 
-      const result = controller.optimizeFormwork(mockLayout.id);
+      const result = await controller.optimizeFormwork(mockLayout.id);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('originalLayout');
@@ -137,17 +139,17 @@ describe('FormworkController', () => {
       expect(result).toHaveProperty('savings');
     });
 
-    it('should throw NOT_FOUND for non-existing layout', () => {
-      expect(() => {
-        controller.optimizeFormwork('non-existing-id');
-      }).toThrow(HttpException);
+    it('should throw NOT_FOUND for non-existing layout', async () => {
+      await expect(
+        controller.optimizeFormwork('non-existing-id'),
+      ).rejects.toThrow(HttpException);
     });
   });
 
   describe('GET /formwork/layout/:layoutId - getLayout()', () => {
-    it('should return layout when it exists', () => {
+    it('should return layout when it exists', async () => {
       // First create a layout
-      controller.calculateFormwork({
+      await controller.calculateFormwork({
         slabData: {
           id: 'slab-123',
           dimensions: { length: 10, width: 8, thickness: 0.25, area: 80 },
@@ -171,9 +173,9 @@ describe('FormworkController', () => {
     });
 
     it('should throw NOT_FOUND for non-existing layout', () => {
-      expect(() => {
-        controller.getLayout('non-existing-id');
-      }).toThrow(HttpException);
+      expect(() => controller.getLayout('non-existing-id')).toThrow(
+        HttpException,
+      );
     });
   });
 

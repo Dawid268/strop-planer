@@ -7,6 +7,15 @@ import {
   Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ExtractedPdfData } from '../../slab/interfaces/slab.interface';
+import {
+  FormworkLayout,
+  OptimizationResult,
+} from '../../formwork/interfaces/formwork.interface';
+import {
+  EditorData,
+  ExtractedSlabGeometry,
+} from '../interfaces/project.interface';
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'Budynek A - Parter' })
@@ -167,6 +176,11 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   public extractedPdfData?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  public editorData?: string;
 }
 
 export class ProjectResponseDto {
@@ -181,6 +195,20 @@ export class ProjectResponseDto {
   public slabType!: string;
   public formworkSystem?: string;
   public slabArea!: number;
+  public calculationResult?: FormworkLayout;
+  public optimizationResult?: OptimizationResult;
+  public extractedPdfData?: ExtractedPdfData;
+  public extractedSlabGeometry?: ExtractedSlabGeometry;
+  public editorData?: EditorData;
+  @ApiPropertyOptional()
+  public geoJsonPath?: string;
+
+  @ApiPropertyOptional()
+  public svgPath?: string;
+
+  @ApiPropertyOptional()
+  public dxfPath?: string;
+
   public createdAt!: Date;
   public updatedAt!: Date;
 }

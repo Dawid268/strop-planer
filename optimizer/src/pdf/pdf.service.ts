@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse');
-import type {
+import pdfParse from 'pdf-parse';
+import {
   ExtractedPdfData,
   SlabData,
   BeamData,
   ReinforcementData,
 } from '../slab/interfaces/slab.interface';
+import { SlabType, ReinforcementElementType } from '../slab/enums/slab.enums';
 
 // Drawing type for recognition
 export type DrawingType =
@@ -35,13 +36,21 @@ export interface BatchUploadResult {
   successfullyParsed: number;
 }
 
-import { GeometryService } from '../geometry/geometry.service';
+// Basic interface for pdf-parse result
+interface PdfParseResult {
+  numpages: number;
+  numrender: number;
+  info: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  text: string;
+  version: string;
+}
 
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
 
-  constructor(private readonly geometryService: GeometryService) {}
+  constructor() {}
 
   /**
    * Parsuje plik PDF i ekstrahuje dane konstrukcyjne
@@ -54,8 +63,8 @@ export class PdfService {
     const geometry = undefined;
 
     try {
-      const pdfData = await pdfParse(buffer);
-      const rawText = pdfData.text as string;
+      const pdfData = (await pdfParse(buffer)) as PdfParseResult;
+      const rawText = pdfData.text;
 
       this.logger.log(`Parsing PDF: ${filename}, pages: ${pdfData.numpages}`);
 
@@ -100,8 +109,8 @@ export class PdfService {
 
     for (const file of files) {
       try {
-        const pdfData = await pdfParse(file.buffer);
-        const rawText = pdfData.text as string;
+        const pdfData = (await pdfParse(file.buffer)) as PdfParseResult;
+        const rawText = pdfData.text;
 
         const { type, confidence } = this.recognizeDrawingType(
           file.filename,
@@ -263,7 +272,7 @@ export class PdfService {
 
   private extractSlabData(text: string, warnings: string[]): SlabData | null {
     const beams = this.extractBeams(text, warnings);
-    const reinforcement = this.extractReinforcement(text, warnings);
+    const reinforcement = this.extractReinforcement(text);
     const axes = this.extractAxes(text);
 
     if (beams.length === 0 && reinforcement.length === 0) {
@@ -271,7 +280,7 @@ export class PdfService {
       return null;
     }
 
-    const dimensions = this.estimateDimensions(axes);
+    const dimensions = this.estimateDimensions();
 
     return {
       id: 'STROP_1',
@@ -327,10 +336,7 @@ export class PdfService {
     return beams;
   }
 
-  private extractReinforcement(
-    text: string,
-    _warnings: string[],
-  ): ReinforcementData[] {
+  private extractReinforcement(text: string): ReinforcementData[] {
     const reinforcement: ReinforcementData[] = [];
     const lines = text.split('\n');
     let currentElement = '';
@@ -365,11 +371,20 @@ export class PdfService {
 
     const directPatterns: Array<{
       pattern: RegExp;
-      type: ReinforcementData['elementType'];
+      type: ReinforcementElementType;
     }> = [
-      { pattern: /W(\d+)\s*.*?(\d+)\s+szt/gi, type: 'wieniec' },
-      { pattern: /B(\d+)\s*.*?(\d+)\s+szt/gi, type: 'belka' },
-      { pattern: /S(\d+[AB]?)\s*.*?(\d+)\s+szt/gi, type: 'strop' },
+      {
+        pattern: /W(\d+)\s*.*?(\d+)\s+szt/gi,
+        type: ReinforcementElementType.WIENIEC,
+      },
+      {
+        pattern: /B(\d+)\s*.*?(\d+)\s+szt/gi,
+        type: ReinforcementElementType.BELKA,
+      },
+      {
+        pattern: /S(\d+[AB]?)\s*.*?(\d+)\s+szt/gi,
+        type: ReinforcementElementType.STROP,
+      },
     ];
 
     for (const { pattern, type } of directPatterns) {
@@ -424,33 +439,30 @@ export class PdfService {
     return { horizontal, vertical };
   }
 
-  private classifyElement(id: string): ReinforcementData['elementType'] {
-    if (id.startsWith('W')) return 'wieniec';
-    if (id.startsWith('B')) return 'belka';
+  private classifyElement(id: string): ReinforcementElementType {
+    if (id.startsWith('W')) return ReinforcementElementType.WIENIEC;
+    if (id.startsWith('B')) return ReinforcementElementType.BELKA;
     if (id.startsWith('S') || id === 'STR' || id.startsWith('ST'))
-      return 'strop';
-    if (id.startsWith('L')) return 'nadproze';
-    return 'strop';
+      return ReinforcementElementType.STROP;
+    if (id.startsWith('L')) return ReinforcementElementType.NADPROZE;
+    return ReinforcementElementType.STROP;
   }
 
-  private detectSlabType(text: string): SlabData['type'] {
+  private detectSlabType(text: string): SlabType {
     const normalizedText = text.toLowerCase();
-    if (normalizedText.includes('teriva')) return 'teriva';
-    if (normalizedText.includes('filigran')) return 'filigran';
+    if (normalizedText.includes('teriva')) return SlabType.TERIVA;
+    if (normalizedText.includes('filigran')) return SlabType.FILIGRAN;
     if (normalizedText.includes('żerańsk') || normalizedText.includes('zerow'))
-      return 'zerowiec';
+      return SlabType.ZEROWIEC;
     if (
       normalizedText.includes('monolityczn') ||
       normalizedText.includes('żelbet')
     )
-      return 'monolityczny';
-    return 'monolityczny';
+      return SlabType.MONOLITHIC;
+    return SlabType.MONOLITHIC;
   }
 
-  private estimateDimensions(_axes: {
-    horizontal: string[];
-    vertical: string[];
-  }): SlabData['dimensions'] {
+  private estimateDimensions(): SlabData['dimensions'] {
     return {
       length: 12.0,
       width: 10.0,
