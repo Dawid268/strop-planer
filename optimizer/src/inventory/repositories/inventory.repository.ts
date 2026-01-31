@@ -12,6 +12,23 @@ export class InventoryRepository {
   ) {}
 
   async findAll(filter?: InventoryFilter): Promise<InventoryItemEntity[]> {
+    const query = this.buildFilterQuery(filter);
+    return query.getMany();
+  }
+
+  async findAllPaginated(
+    filter?: InventoryFilter,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ data: InventoryItemEntity[]; total: number }> {
+    const query = this.buildFilterQuery(filter);
+    query.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+    return { data, total };
+  }
+
+  private buildFilterQuery(filter?: InventoryFilter) {
     const query = this.repository.createQueryBuilder('item');
 
     if (filter) {
@@ -43,7 +60,7 @@ export class InventoryRepository {
       }
     }
 
-    return query.getMany();
+    return query;
   }
 
   async findById(id: string): Promise<InventoryItemEntity | null> {

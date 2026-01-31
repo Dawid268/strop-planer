@@ -7,14 +7,18 @@ import {
   Body,
   Param,
   UseGuards,
+  BadRequestException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ProjectsService } from '@/projects/projects.service';
+import { FormworkService } from '@/formwork/formwork.service';
 import { AtGuard } from '@/auth/auth.guard';
 import {
   CreateProjectDto,
@@ -22,6 +26,10 @@ import {
   ProjectResponseDto,
 } from './dto/project.dto';
 import { GetCurrentUserId } from '@/common/decorators';
+import {
+  PaginationQueryDto,
+  PaginatedResponse,
+} from '@/common/dto/pagination.dto';
 import {
   FormworkLayout,
   OptimizationResult,
@@ -38,16 +46,40 @@ import {
 @UseGuards(AtGuard)
 @Controller('projects')
 export class ProjectsController {
-  public constructor(private readonly projectsService: ProjectsService) {}
+  public constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly formworkService: FormworkService,
+  ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista wszystkich projektów użytkownika' })
+  @ApiOperation({
+    summary: 'Lista wszystkich projektów użytkownika (z paginacją)',
+  })
   @ApiResponse({ status: 200, type: [ProjectResponseDto] })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   public async getProjects(
     @GetCurrentUserId() userId: string,
-  ): Promise<ProjectResponseDto[]> {
-    const projects = await this.projectsService.findAll(userId);
-    return projects.map((p) => this.mapToResponse(p));
+    @Query() pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<ProjectResponseDto>> {
+    const { data, total } = await this.projectsService.findAllPaginated(
+      userId,
+      pagination.page ?? 1,
+      pagination.limit ?? 20,
+    );
+    const totalPages = Math.ceil(total / (pagination.limit ?? 20));
+
+    return {
+      data: data.map((p) => this.mapToResponse(p)),
+      meta: {
+        total,
+        page: pagination.page ?? 1,
+        limit: pagination.limit ?? 20,
+        totalPages,
+        hasNextPage: (pagination.page ?? 1) < totalPages,
+        hasPreviousPage: (pagination.page ?? 1) > 1,
+      },
+    };
   }
 
   @Get('stats')
@@ -101,13 +133,63 @@ export class ProjectsController {
   }
 
   @Post(':id/calculate')
-  @ApiOperation({ summary: 'Uruchom obliczenia dla projektu' })
+  @ApiOperation({ summary: 'Uruchom obliczenia szalunku dla projektu' })
+  @ApiResponse({ status: 200, type: ProjectResponseDto })
   public async triggerCalculation(
     @Param('id') id: string,
     @GetCurrentUserId() userId: string,
   ): Promise<ProjectResponseDto> {
     const project = await this.projectsService.findOne(id, userId);
-    return this.mapToResponse(project);
+
+    if (!project.slabLength || !project.slabWidth || !project.slabThickness) {
+      throw new BadRequestException(
+        'Projekt wymaga wymiarów stropu (slabLength, slabWidth, slabThickness)',
+      );
+    }
+
+    const slabArea = project.slabLength * project.slabWidth;
+
+    const slabData = {
+      id: project.id,
+      dimensions: {
+        length: project.slabLength,
+        width: project.slabWidth,
+        thickness: project.slabThickness,
+        area: slabArea,
+      },
+      type: project.slabType || 'monolityczny',
+      beams: [],
+      reinforcement: [],
+      axes: { horizontal: [], vertical: [] },
+    };
+
+    const params = {
+      slabArea,
+      slabThickness: project.slabThickness,
+      floorHeight: project.floorHeight,
+      includeBeams: true,
+      preferredSystem: project.formworkSystem as
+        | 'PERI_SKYDECK'
+        | 'DOKA_DOKAFLEX'
+        | 'ULMA_ENKOFLEX'
+        | 'MEVA'
+        | 'CUSTOM'
+        | undefined,
+    };
+
+    const calculationResult = await this.formworkService.calculateFormwork(
+      slabData,
+      params,
+    );
+
+    await this.projectsService.saveCalculationResult(
+      id,
+      userId,
+      JSON.stringify(calculationResult),
+    );
+
+    const updatedProject = await this.projectsService.findOne(id, userId);
+    return this.mapToResponse(updatedProject);
   }
 
   private mapToResponse(p: FormworkProjectEntity): ProjectResponseDto {
