@@ -44,7 +44,7 @@ import {
 @ApiTags('Projects')
 @ApiBearerAuth()
 @UseGuards(AtGuard)
-@Controller('projects')
+@Controller({ version: '1', path: 'projects' })
 export class ProjectsController {
   public constructor(
     private readonly projectsService: ProjectsService,

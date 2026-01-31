@@ -80,7 +80,7 @@ class CalculateRequestDto {
 @ApiTags('Formwork')
 @ApiBearerAuth()
 @UseGuards(AtGuard)
-@Controller('formwork')
+@Controller({ version: '1', path: 'formwork' })
 export class FormworkController {
   private readonly layouts: Map<string, FormworkLayout> = new Map();
 

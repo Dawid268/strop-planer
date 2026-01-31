@@ -41,7 +41,7 @@ interface PdfUploadResponse {
 }
 
 @ApiTags('PDF')
-@Controller('pdf')
+@Controller({ version: '1', path: 'pdf' })
 export class PdfController {
   private readonly logger = new Logger(PdfController.name);
 

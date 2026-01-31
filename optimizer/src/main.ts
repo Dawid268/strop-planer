@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe, LoggerService } from '@nestjs/common';
+import { ValidationPipe, LoggerService, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
@@ -17,6 +17,12 @@ async function bootstrap(): Promise<void> {
   app.useLogger(logger);
 
   app.setGlobalPrefix('api');
+
+  // Enable URI-based API versioning: /api/v1/...
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -48,9 +54,9 @@ async function bootstrap(): Promise<void> {
 - **Porównanie systemów** - PERI, DOKA, ULMA, MEVA
 
 ### Workflow:
-1. Wgraj PDF z projektem stropu \`POST /pdf/upload\`
-2. Oblicz układ szalunku \`POST /formwork/calculate\`
-3. Zoptymalizuj rozwiązanie \`POST /formwork/optimize/{layoutId}\`
+1. Wgraj PDF z projektem stropu \`POST /api/v1/pdf/upload\`
+2. Oblicz układ szalunku \`POST /api/v1/formwork/calculate\`
+3. Zoptymalizuj rozwiązanie \`POST /api/v1/formwork/optimize/{layoutId}\`
     `,
     )
     .setVersion('1.0.0')

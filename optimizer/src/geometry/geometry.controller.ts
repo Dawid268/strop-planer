@@ -13,7 +13,7 @@ import { ExtractGeometryDto } from './dto/extract-geometry.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('Geometry')
-@Controller('geometry')
+@Controller({ version: '1', path: 'geometry' })
 export class GeometryController {
   private readonly logger = new Logger(GeometryController.name);
 
