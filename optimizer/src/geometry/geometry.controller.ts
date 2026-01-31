@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   BadRequestException,
+  NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { GeometryService } from './geometry.service';
@@ -43,12 +44,14 @@ export class GeometryController {
 
   @Get('jobs/:id')
   @ApiOperation({ summary: 'Get status of extraction job' })
+  @ApiResponse({ status: 200, description: 'Job status returned' })
+  @ApiResponse({ status: 404, description: 'Job not found' })
   getStatus(@Param('id') id: string) {
     this.logger.debug(`Checking status for job: ${id}`);
     const job = this.geometryService.getJobStatus(id);
     if (!job) {
       this.logger.warn(`Job not found: ${id}`);
-      throw new BadRequestException('Job not found');
+      throw new NotFoundException(`Job ${id} not found`);
     }
     return job;
   }

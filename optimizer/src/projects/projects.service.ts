@@ -19,6 +19,20 @@ export class ProjectsService {
     });
   }
 
+  public async findAllPaginated(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ data: FormworkProjectEntity[]; total: number }> {
+    const [data, total] = await this.projectsRepository.findAndCount({
+      where: { userId },
+      order: { updatedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, total };
+  }
+
   public async findOne(
     id: string,
     userId: string,
@@ -124,8 +138,16 @@ export class ProjectsService {
       geoJsonPath?: string;
       svgPath?: string;
     },
+    userId?: string,
   ): Promise<FormworkProjectEntity> {
-    const project = await this.projectsRepository.findOne({ where: { id } });
+    const whereClause: { id: string; userId?: string } = { id };
+    if (userId) {
+      whereClause.userId = userId;
+    }
+
+    const project = await this.projectsRepository.findOne({
+      where: whereClause,
+    });
     if (!project) {
       throw new NotFoundException(`Projekt ${id} nie znaleziony`);
     }

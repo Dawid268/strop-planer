@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { GeometryController } from './geometry.controller';
 import { GeometryService, Job } from './geometry.service';
 import { ExtractGeometryDto } from './dto/extract-geometry.dto';
@@ -107,11 +107,11 @@ describe('GeometryController', () => {
       expect(geometryService.getJobStatus).toHaveBeenCalledWith('test-job-id');
     });
 
-    it('should throw BadRequestException for non-existent job', () => {
+    it('should throw NotFoundException for non-existent job', () => {
       mockGeometryService.getJobStatus.mockReturnValue(null);
 
       expect(() => controller.getStatus('non-existent')).toThrow(
-        BadRequestException,
+        NotFoundException,
       );
     });
 

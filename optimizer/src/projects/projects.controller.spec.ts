@@ -2,6 +2,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
+import { FormworkService } from '../formwork/formwork.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { FormworkProjectEntity } from '../inventory/entities/formwork-project.entity';
 import { EditorData } from './interfaces/project.interface';
@@ -30,6 +31,9 @@ describe('ProjectsController', () => {
 
   const mockProjectsService = {
     findAll: jest.fn().mockResolvedValue([mockProject]),
+    findAllPaginated: jest
+      .fn()
+      .mockResolvedValue({ data: [mockProject], total: 1 }),
     findOne: jest.fn().mockResolvedValue(mockProject),
     create: jest.fn().mockResolvedValue(mockProject),
     update: jest.fn().mockResolvedValue(mockProject),
@@ -39,6 +43,15 @@ describe('ProjectsController', () => {
     saveOptimizationResult: jest.fn().mockResolvedValue(mockProject),
   };
 
+  const mockFormworkService = {
+    calculateFormwork: jest.fn().mockResolvedValue({
+      id: 'layout-123',
+      elements: [],
+      slabArea: 80,
+    }),
+    optimize: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -46,6 +59,10 @@ describe('ProjectsController', () => {
         {
           provide: ProjectsService,
           useValue: mockProjectsService,
+        },
+        {
+          provide: FormworkService,
+          useValue: mockFormworkService,
         },
       ],
     }).compile();
@@ -61,12 +78,19 @@ describe('ProjectsController', () => {
   });
 
   describe('getProjects', () => {
-    it('should return list of projects', async () => {
-      const result = await controller.getProjects(mockUserId);
+    it('should return paginated list of projects', async () => {
+      const pagination = { page: 1, limit: 20 };
 
-      expect(projectsService.findAll).toHaveBeenCalledWith(mockUserId);
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(mockProjectId);
+      const result = await controller.getProjects(mockUserId, pagination);
+
+      expect(projectsService.findAllPaginated).toHaveBeenCalledWith(
+        mockUserId,
+        1,
+        20,
+      );
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe(mockProjectId);
+      expect(result.meta.total).toBe(1);
     });
   });
 

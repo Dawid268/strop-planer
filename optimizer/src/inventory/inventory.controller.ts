@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,7 +26,10 @@ import {
   InventoryItemDto,
 } from './dto/inventory.dto';
 import { InventorySummary } from './interfaces/inventory.interface';
-import { BadRequestException } from '@nestjs/common';
+import {
+  PaginationQueryDto,
+  PaginatedResponse,
+} from '../common/dto/pagination.dto';
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
@@ -35,7 +39,9 @@ export class InventoryController {
   public constructor(private readonly inventoryService: InventoryService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Lista wszystkich elementów magazynowych' })
+  @ApiOperation({
+    summary: 'Lista wszystkich elementów magazynowych (z paginacją)',
+  })
   @ApiQuery({ name: 'type', required: false, description: 'Filtr po typie' })
   @ApiQuery({
     name: 'system',
@@ -47,10 +53,30 @@ export class InventoryController {
     required: false,
     description: 'Filtr po producencie',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   public async findAll(
     @Query() filter: InventoryFilterDto,
-  ): Promise<InventoryItemDto[]> {
-    return this.inventoryService.findAll(filter);
+    @Query() pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponse<InventoryItemDto>> {
+    const { data, total } = await this.inventoryService.findAllPaginated(
+      filter,
+      pagination.page ?? 1,
+      pagination.limit ?? 20,
+    );
+    const totalPages = Math.ceil(total / (pagination.limit ?? 20));
+
+    return {
+      data,
+      meta: {
+        total,
+        page: pagination.page ?? 1,
+        limit: pagination.limit ?? 20,
+        totalPages,
+        hasNextPage: (pagination.page ?? 1) < totalPages,
+        hasPreviousPage: (pagination.page ?? 1) > 1,
+      },
+    };
   }
 
   @Get('summary')

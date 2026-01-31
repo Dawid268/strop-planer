@@ -6,8 +6,15 @@ import {
   Param,
   BadRequestException,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { AtGuard } from '../auth/auth.guard';
 import {
   IsString,
   IsNumber,
@@ -71,6 +78,8 @@ class CalculateRequestDto {
 }
 
 @ApiTags('Formwork')
+@ApiBearerAuth()
+@UseGuards(AtGuard)
 @Controller('formwork')
 export class FormworkController {
   private readonly layouts: Map<string, FormworkLayout> = new Map();

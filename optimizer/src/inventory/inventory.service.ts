@@ -32,6 +32,24 @@ export class InventoryService {
     );
   }
 
+  public async findAllPaginated(
+    filter?: InventoryFilterDto,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{ data: InventoryItemDto[]; total: number }> {
+    const { data, total } = await this.repository.findAllPaginated(
+      filter,
+      page,
+      limit,
+    );
+    const mappedData = await this.mapper.mapArrayAsync(
+      data,
+      InventoryItemEntity,
+      InventoryItemDto,
+    );
+    return { data: mappedData, total };
+  }
+
   /**
    * Pobiera element po ID
    */

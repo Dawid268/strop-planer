@@ -42,6 +42,9 @@ describe('InventoryController', () => {
 
   const mockInventoryService = {
     findAll: jest.fn().mockResolvedValue([mockItemDto]),
+    findAllPaginated: jest
+      .fn()
+      .mockResolvedValue({ data: [mockItemDto], total: 1 }),
     findOne: jest.fn().mockResolvedValue(mockItemDto),
     create: jest.fn().mockResolvedValue(mockItemDto),
     update: jest.fn().mockResolvedValue(mockItemDto),
@@ -74,14 +77,20 @@ describe('InventoryController', () => {
   });
 
   describe('findAll', () => {
-    it('should return list of inventory items', async () => {
+    it('should return paginated list of inventory items', async () => {
       const filter = { type: 'panel' };
+      const pagination = { page: 1, limit: 20 };
 
-      const result = await controller.findAll(filter);
+      const result = await controller.findAll(filter, pagination);
 
-      expect(inventoryService.findAll).toHaveBeenCalledWith(filter);
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('item-123');
+      expect(inventoryService.findAllPaginated).toHaveBeenCalledWith(
+        filter,
+        1,
+        20,
+      );
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('item-123');
+      expect(result.meta.total).toBe(1);
     });
   });
 
