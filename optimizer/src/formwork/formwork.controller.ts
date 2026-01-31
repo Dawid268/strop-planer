@@ -23,6 +23,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
 import { FormworkService } from './formwork.service';
 import type {
   FormworkLayout,
@@ -31,6 +32,7 @@ import type {
 } from './interfaces/formwork.interface';
 import { SlabData } from '../slab/interfaces/slab.interface';
 import { SlabDataDto } from '../slab/dto/slab.dto';
+import { FORMWORK_SYSTEMS_LIST } from '@common/constants';
 
 class CalculateFormworkDto implements FormworkCalculationParams {
   @IsNumber()
@@ -88,10 +90,10 @@ export class FormworkController {
 
   @Get()
   @ApiOperation({ summary: 'Health check endpointu Formwork' })
-  public getStatus(): { status: string; systems: string[] } {
+  public getStatus(): { status: string; systems: readonly string[] } {
     return {
       status: 'ok',
-      systems: ['PERI_SKYDECK', 'DOKA_DOKAFLEX', 'ULMA_ENKOFLEX', 'MEVA'],
+      systems: FORMWORK_SYSTEMS_LIST,
     };
   }
 

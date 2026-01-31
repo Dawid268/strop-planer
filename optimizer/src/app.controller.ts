@@ -1,23 +1,32 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+
 import { AppService } from './app.service';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { HEALTH_STATUS } from '@common/constants';
+
+interface HealthCheckResponse {
+  status: string;
+  timestamp: string;
+}
 
 @ApiTags('Health')
 @Controller({ version: '1', path: '' })
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  public constructor(private readonly appService: AppService) {}
 
   @Get('health')
   @ApiOperation({ summary: 'Health check endpoint' })
-  getHealth(): { status: string; timestamp: string } {
+  @ApiResponse({ status: 200, description: 'Service is healthy' })
+  public getHealth(): HealthCheckResponse {
     return {
-      status: 'ok',
+      status: HEALTH_STATUS.OK,
       timestamp: new Date().toISOString(),
     };
   }
 
   @Get()
-  getHello(): string {
+  @ApiOperation({ summary: 'Welcome message' })
+  public getHello(): string {
     return this.appService.getHello();
   }
 }

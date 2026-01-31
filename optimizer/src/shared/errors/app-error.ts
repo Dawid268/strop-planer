@@ -1,10 +1,14 @@
+/**
+ * Base application error class
+ * All custom errors should extend this class
+ */
 export class AppError extends Error {
-  constructor(
+  public constructor(
     public readonly code: string,
     public override readonly message: string,
     public readonly statusCode: number = 500,
     public readonly userMessage: string = 'An error occurred',
-    public readonly context?: Record<string, any>,
+    public readonly context?: Record<string, unknown>,
   ) {
     super(message);
     Object.setPrototypeOf(this, AppError.prototype);

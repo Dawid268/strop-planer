@@ -79,15 +79,16 @@ export class AuthService {
 
   private async getTokens(user: UserEntity): Promise<TokenResponseDto> {
     const secret =
-      this.config.get<string>(AUTH_CONSTANTS.CONFIG.JWT_SECRET) || 'secret';
+      this.config.get<string>(AUTH_CONSTANTS.CONFIG.JWT_SECRET) ||
+      AUTH_CONSTANTS.DEFAULTS.JWT_SECRET;
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
         { sub: user.id, email: user.email, role: user.role },
-        { secret, expiresIn: '15m' },
+        { secret, expiresIn: AUTH_CONSTANTS.DEFAULTS.ACCESS_TOKEN_EXPIRY },
       ),
       this.jwtService.signAsync(
         { sub: user.id, email: user.email, role: user.role },
-        { secret, expiresIn: '7d' },
+        { secret, expiresIn: AUTH_CONSTANTS.DEFAULTS.REFRESH_TOKEN_EXPIRY },
       ),
     ]);
 
@@ -114,7 +115,7 @@ export class AuthService {
     const newUser = this.userRepository.create({
       ...dto,
       passwordHash,
-      role: 'admin',
+      role: AUTH_CONSTANTS.ROLES.ADMIN,
       isActive: true,
     });
 
