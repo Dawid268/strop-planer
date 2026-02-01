@@ -27,7 +27,7 @@
       [pTooltip]="'editor.actions.autoLayout' | transloco"
       tooltipPosition="bottom"
       (click)="generateAutoLayout()"
-      [disabled]="!store.shapes().length"
+      [disabled]="!store.allShapes().length"
     ></p-button>
 
     <p-button

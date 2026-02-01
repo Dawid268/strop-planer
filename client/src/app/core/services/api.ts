@@ -1,17 +1,17 @@
-import { Injectable, inject } from "@angular/core";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable } from "rxjs";
-import { environment } from "../../../environments/environment";
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root',
 })
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiUrl;
 
   private readonly defaultHeaders = new HttpHeaders({
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   });
 
   /**
@@ -56,7 +56,7 @@ export class ApiService {
   public uploadFile<T>(
     endpoint: string,
     file: File,
-    fieldName = "file"
+    fieldName = 'file',
   ): Observable<T> {
     const formData = new FormData();
     formData.append(fieldName, file);

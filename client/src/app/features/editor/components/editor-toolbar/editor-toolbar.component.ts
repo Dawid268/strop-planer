@@ -5,19 +5,19 @@ import {
   EventEmitter,
   effect,
   ChangeDetectionStrategy,
-} from "@angular/core";
-import { CommonModule, DecimalPipe } from "@angular/common";
-import { FormsModule } from "@angular/forms";
-import { ButtonModule } from "primeng/button";
-import { SelectButtonModule } from "primeng/selectbutton";
-import { TooltipModule } from "primeng/tooltip";
-import { DividerModule } from "primeng/divider";
-import { TranslocoModule } from "@jsverse/transloco";
-import { EditorStore } from "../../store/editor.store";
-import type { EditorTool } from "../../models/editor.models";
+} from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { TooltipModule } from 'primeng/tooltip';
+import { DividerModule } from 'primeng/divider';
+import { TranslocoModule } from '@jsverse/transloco';
+import { EditorStore } from '../../store/editor.store';
+import type { EditorTool } from '../../models/editor.models';
 
 @Component({
-  selector: "app-editor-toolbar",
+  selector: 'app-editor-toolbar',
   standalone: true,
   imports: [
     CommonModule,
@@ -29,8 +29,8 @@ import type { EditorTool } from "../../models/editor.models";
     DecimalPipe,
     TranslocoModule,
   ],
-  templateUrl: "./editor-toolbar.component.html",
-  styleUrls: ["./editor-toolbar.component.scss"],
+  templateUrl: './editor-toolbar.component.html',
+  styleUrls: ['./editor-toolbar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditorToolbarComponent {
@@ -39,7 +39,7 @@ export class EditorToolbarComponent {
   constructor() {
     effect(() => {
       console.log(
-        "DEBUG: Toolbar isSlabDefined signal:",
+        'DEBUG: Toolbar isSlabDefined signal:',
         this.store.isSlabDefined(),
       );
     });
@@ -51,41 +51,41 @@ export class EditorToolbarComponent {
 
   public toolOptions = [
     {
-      value: "select",
-      icon: "pi pi-arrow-up-left",
-      tooltipKey: "editor.tools.select",
+      value: 'select',
+      icon: 'pi pi-arrow-up-left',
+      tooltipKey: 'editor.tools.select',
     },
-    { value: "pan", icon: "pi pi-arrows-alt", tooltipKey: "editor.tools.pan" },
+    { value: 'pan', icon: 'pi pi-arrows-alt', tooltipKey: 'editor.tools.pan' },
     {
-      value: "add-panel",
-      icon: "pi pi-th-large",
-      tooltipKey: "editor.tools.addPanel",
-    },
-    {
-      value: "add-prop",
-      icon: "pi pi-stop",
-      tooltipKey: "editor.tools.addProp",
+      value: 'add-panel',
+      icon: 'pi pi-th-large',
+      tooltipKey: 'editor.tools.addPanel',
     },
     {
-      value: "draw-beam",
-      icon: "pi pi-pencil",
-      tooltipKey: "editor.tools.drawBeam",
+      value: 'add-prop',
+      icon: 'pi pi-stop',
+      tooltipKey: 'editor.tools.addProp',
     },
     {
-      value: "draw-polygon",
-      icon: "pi pi-pencil",
-      tooltipKey: "editor.tools.drawPolygon",
+      value: 'draw-beam',
+      icon: 'pi pi-pencil',
+      tooltipKey: 'editor.tools.drawBeam',
     },
     {
-      value: "trace-slab",
-      icon: "pi pi-map-marker",
-      tooltipKey: "editor.tools.traceSlab",
+      value: 'draw-polygon',
+      icon: 'pi pi-pencil',
+      tooltipKey: 'editor.tools.drawPolygon',
+    },
+    {
+      value: 'trace-slab',
+      icon: 'pi pi-map-marker',
+      tooltipKey: 'editor.tools.traceSlab',
     },
   ];
 
   public viewModeOptions = [
-    { labelKey: "editor.viewModes.full", value: "full", icon: "pi pi-image" },
-    { labelKey: "editor.viewModes.slab", value: "slab", icon: "pi pi-clone" },
+    { labelKey: 'editor.viewModes.full', value: 'full', icon: 'pi pi-image' },
+    { labelKey: 'editor.viewModes.slab', value: 'slab', icon: 'pi pi-clone' },
   ];
 
   public setTool(tool: EditorTool): void {

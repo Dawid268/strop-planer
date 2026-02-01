@@ -1,0 +1,7 @@
+.no-underline {
+  text-underline-offset: unset;
+  text-decoration: none;
+}
+::ng-deep .stat-card .p-card-body {
+  padding: 0 !important;
+}

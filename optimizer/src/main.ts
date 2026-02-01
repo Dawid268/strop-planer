@@ -3,6 +3,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe, LoggerService, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
@@ -16,6 +17,21 @@ async function bootstrap(): Promise<void> {
   const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
 
   app.useLogger(logger);
+
+  // Security: Helmet middleware for HTTP headers protection
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          scriptSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow Swagger UI
+    }),
+  );
 
   app.setGlobalPrefix(API_CONFIG.PREFIX);
 

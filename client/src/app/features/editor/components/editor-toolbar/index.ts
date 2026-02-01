@@ -1,1 +1,1 @@
-export * from "./editor-toolbar.component";
+export * from './editor-toolbar.component';

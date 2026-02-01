@@ -1,8 +1,8 @@
 /** Default layer names - can be extended with user-created layers */
-export type DefaultLayerName = "slab" | "beams" | "formwork" | "annotations";
+export type DefaultLayerName = 'slab' | 'beams' | 'formwork' | 'annotations';
 
 /** Layer category determines permissions and behavior */
-export type LayerCategory = "system" | "data" | "user";
+export type LayerCategory = 'system' | 'data' | 'user';
 
 export interface LayerState {
   /** Unique identifier for the layer */
@@ -31,14 +31,14 @@ export type LayerType = string;
 export type EditorTool = ToolType;
 
 export type ToolType =
-  | "select"
-  | "pan"
-  | "add-panel"
-  | "add-prop"
-  | "draw-beam"
-  | "draw-polygon"
-  | "trace-slab"
-  | "rectangle";
+  | 'select'
+  | 'pan'
+  | 'add-panel'
+  | 'add-prop'
+  | 'draw-beam'
+  | 'draw-polygon'
+  | 'trace-slab'
+  | 'rectangle';
 
 export interface Point {
   x: number;
@@ -47,7 +47,7 @@ export interface Point {
 
 export interface Shape {
   id: string;
-  type: "slab" | "beam" | "panel" | "prop" | "polygon" | "rectangle";
+  type: 'slab' | 'beam' | 'panel' | 'prop' | 'polygon' | 'rectangle';
   x: number;
   y: number;
   rotation?: number;
@@ -65,7 +65,7 @@ export interface Shape {
 }
 
 export interface PanelShape extends Shape {
-  type: "panel";
+  type: 'panel';
   width: number;
   length: number;
   catalogCode: string;
@@ -74,7 +74,7 @@ export interface PanelShape extends Shape {
 }
 
 export interface BeamShape extends Shape {
-  type: "beam";
+  type: 'beam';
   endX: number;
   endY: number;
 }
@@ -86,7 +86,7 @@ export interface CatalogItem {
   length: number;
   manufacturer: string;
   system: string;
-  type: "panel" | "prop";
+  type: 'panel' | 'prop';
 }
 
 export interface EditorState {
@@ -109,11 +109,11 @@ export interface EditorState {
   activeLayerId: string;
 }
 
-export type ViewMode = "full" | "slab";
+export type ViewMode = 'full' | 'slab';
 
 export const DEFAULT_COLORS = {
-  slab: { fill: "#eeeeee", stroke: "#9e9e9e" },
-  beam: { stroke: "#ffeb3b" },
-  panel: { fill: "#ffebee", stroke: "#d32f2f" },
-  prop: { fill: "#e3f2fd", stroke: "#1976d2" },
+  slab: { fill: '#eeeeee', stroke: '#9e9e9e' },
+  beam: { stroke: '#ffeb3b' },
+  panel: { fill: '#ffebee', stroke: '#d32f2f' },
+  prop: { fill: '#e3f2fd', stroke: '#1976d2' },
 };

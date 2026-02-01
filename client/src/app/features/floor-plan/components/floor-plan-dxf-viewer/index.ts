@@ -1,1 +1,1 @@
-export * from "./floor-plan-dxf-viewer.component";
+export * from './floor-plan-dxf-viewer.component';

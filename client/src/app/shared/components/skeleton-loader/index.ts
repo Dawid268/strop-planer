@@ -1,1 +1,1 @@
-export * from "./skeleton-loader.component";
+export * from './skeleton-loader.component';

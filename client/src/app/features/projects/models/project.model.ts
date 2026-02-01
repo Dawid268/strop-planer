@@ -1,3 +1,27 @@
+import { Shape } from "../../editor/models/editor.models";
+
+export interface EditorLayer {
+  id: string;
+  name: string;
+  shapes: Shape[];
+  isVisible: boolean;
+  isLocked: boolean;
+  opacity: number;
+  color?: string;
+  type?: "ai_vectors" | "user" | "system";
+}
+
+export interface EditorTab {
+  id: string;
+  name: string;
+  active: boolean;
+  layers: EditorLayer[];
+}
+
+export interface EditorData {
+  tabs: EditorTab[];
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -17,7 +41,8 @@ export interface Project {
   geoJsonPath?: string;
   svgPath?: string;
   extractedPdfData?: any;
-  extractedSlabGeometry?: any; // JSON string with polygons
+  extractedSlabGeometry?: any;
+  editorData?: EditorData;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,8 +60,8 @@ export interface CreateProjectDto {
   dxfPath?: string;
   geoJsonPath?: string;
   svgPath?: string;
-  extractedPdfData?: string; // JSON string
-  extractedSlabGeometry?: string; // JSON string
+  extractedPdfData?: string;
+  extractedSlabGeometry?: string;
 }
 
 export interface UpdateProjectDto {
@@ -66,5 +91,5 @@ export interface Job {
   message: string;
   result?: any;
   error?: string;
-  createdAt: Date;
+  createdAt: string;
 }

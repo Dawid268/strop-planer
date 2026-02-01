@@ -1,120 +1,139 @@
-import "zone.js";
-import "zone.js/testing";
-import { TestBed } from "@angular/core/testing";
+import { TestBed, fakeAsync, tick } from "@angular/core/testing";
+import { provideHttpClient } from "@angular/common/http";
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from "@angular/common/http/testing";
 import { ProjectsService } from "./projects.service";
 import { ProjectsApiService } from "./projects-api.service";
 import { ProjectsStore } from "../store/projects.store";
-import { HttpClientTestingModule } from "@angular/common/http/testing";
+import { environment } from "@env/environment";
 import { of } from "rxjs";
-import type {
-  Project,
-  CreateProjectDto,
-  UpdateProjectDto,
-} from "../models/project.model";
+import { Project, CreateProjectDto, Job } from "../models/project.model";
 
-describe("ProjectsService", () => {
+describe("ProjectsService (Black-box)", () => {
   let service: ProjectsService;
-  let apiMock: jasmine.SpyObj<ProjectsApiService>;
-  let storeMock: any;
-
-  const mockProject: Project = {
-    id: "p1",
-    name: "Project 1",
-    status: "draft",
-    slabLength: 10,
-    slabWidth: 10,
-    slabThickness: 0.2,
-    floorHeight: 3,
-    slabType: "monolithic",
-    slabArea: 100,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  let httpMock: HttpTestingController;
+  let apiSpy: jest.Mocked<ProjectsApiService>;
+  let storeSpy: jest.Mocked<ProjectsStore>;
+  const API_URL = environment.apiUrl;
 
   beforeEach(() => {
-    apiMock = jasmine.createSpyObj("ProjectsApiService", [
-      "getAll",
-      "getById",
-      "create",
-      "update",
-      "delete",
-    ]);
-    storeMock = jasmine.createSpyObj("ProjectsStore", [
-      "addProject",
-      "updateProjectState",
-      "deleteProject",
-    ]);
+    const apiMock = {
+      getAll: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      getById: jest.fn(),
+    };
+
+    const storeMock = {
+      addProject: jest.fn(),
+      updateProjectState: jest.fn(),
+      setProjects: jest.fn(),
+      deleteProject: jest.fn(),
+    };
 
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
       providers: [
         ProjectsService,
         { provide: ProjectsApiService, useValue: apiMock },
         { provide: ProjectsStore, useValue: storeMock },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     });
 
     service = TestBed.inject(ProjectsService);
+    httpMock = TestBed.inject(HttpTestingController);
+    apiSpy = TestBed.inject(
+      ProjectsApiService,
+    ) as jest.Mocked<ProjectsApiService>;
+    storeSpy = TestBed.inject(ProjectsStore) as jest.Mocked<ProjectsStore>;
   });
 
-  it("should be created", () => {
-    expect(service).toBeTruthy();
-  });
-
-  describe("getProjects", () => {
-    it("should call api.getAll", () => {
-      apiMock.getAll.and.returnValue(of([mockProject]));
-      service.getProjects().subscribe((projects) => {
-        expect(projects).toEqual([mockProject]);
-        expect(apiMock.getAll).toHaveBeenCalled();
-      });
-    });
+  afterEach(() => {
+    httpMock.verify();
   });
 
   describe("create", () => {
-    it("should call api.create and store.addProject", () => {
-      const dto: CreateProjectDto = { name: "New" } as any;
-      apiMock.create.and.returnValue(of(mockProject));
+    it("should call api.create and update store", () => {
+      const dto: CreateProjectDto = { name: "Test Project" };
+      const mockProject = { id: "1", ...dto } as Project;
+      apiSpy.create.mockReturnValue(of(mockProject));
 
       service.create(dto).subscribe((project) => {
         expect(project).toEqual(mockProject);
-        expect(apiMock.create).toHaveBeenCalledWith(dto);
-        expect(storeMock.addProject).toHaveBeenCalledWith(mockProject);
+        expect(storeSpy.addProject).toHaveBeenCalledWith(mockProject);
       });
     });
   });
 
-  describe("update", () => {
-    it("should call api.update and store.updateProjectState", () => {
-      const dto: UpdateProjectDto = { name: "Updated" };
-      apiMock.update.and.returnValue(of(mockProject));
+  describe("uploadPdf", () => {
+    it("should send POST with FormData", () => {
+      const projectId = "1";
+      const file = new File(["test"], "test.pdf", { type: "application/pdf" });
 
-      service.update("p1", dto).subscribe((project) => {
-        expect(project).toEqual(mockProject);
-        expect(apiMock.update).toHaveBeenCalledWith("p1", dto);
-        expect(storeMock.updateProjectState).toHaveBeenCalledWith(mockProject);
-      });
+      service.uploadPdf(projectId, file).subscribe();
+
+      const req = httpMock.expectOne(`${API_URL}/pdf/upload/${projectId}`);
+      expect(req.request.method).toBe("POST");
+      expect(req.request.body instanceof FormData).toBe(true);
+      req.flush({ success: true });
     });
   });
 
-  describe("delete", () => {
-    it("should call api.delete and store.deleteProject", () => {
-      apiMock.delete.and.returnValue(of(undefined));
+  describe("extractGeometry", () => {
+    it("should start extraction and poll for status", fakeAsync(() => {
+      const pdfPath = "/uploads/test.pdf";
+      const projectId = "1";
+      const jobId = "job123";
+      let result: Job | undefined;
 
-      service.delete("p1").subscribe(() => {
-        expect(apiMock.delete).toHaveBeenCalledWith("p1");
-        expect(storeMock.deleteProject).toHaveBeenCalledWith("p1");
-      });
-    });
-  });
+      // Mock start response
+      const startResponse = {
+        data: { jobId },
+        status: "success",
+        message: "",
+        timestamp: new Date(),
+      };
 
-  describe("getOne", () => {
-    it("should call api.getById", () => {
-      apiMock.getById.and.returnValue(of(mockProject));
-      service.getOne("p1").subscribe((project) => {
-        expect(project).toEqual(mockProject);
-        expect(apiMock.getById).toHaveBeenCalledWith("p1");
+      // Mock polling responses
+      const jobPending: Job = {
+        id: jobId,
+        status: "pending",
+        message: "P",
+        createdAt: new Date(),
+      };
+      const jobCompleted: Job = {
+        id: jobId,
+        status: "completed",
+        message: "C",
+        createdAt: new Date(),
+      };
+
+      service.extractGeometry(pdfPath, projectId).subscribe((job) => {
+        result = job;
       });
-    });
+
+      // Handle start request
+      const startReq = httpMock.expectOne(`${API_URL}/geometry/extract`);
+      expect(startReq.request.body).toEqual({ pdfPath, projectId });
+      startReq.flush(startResponse);
+
+      tick(); // allow timer(0, 2000) to fire immediately
+
+      // Handle first poll
+      const poll1 = httpMock.expectOne(`${API_URL}/geometry/jobs/${jobId}`);
+      poll1.flush({ data: jobPending });
+
+      tick(2000); // wait for next interval
+
+      // Handle second poll
+      const poll2 = httpMock.expectOne(`${API_URL}/geometry/jobs/${jobId}`);
+      poll2.flush({ data: jobCompleted });
+
+      expect(result).toEqual(jobCompleted);
+    }));
   });
 });

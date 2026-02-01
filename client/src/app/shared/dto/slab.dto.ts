@@ -59,23 +59,23 @@ export interface ExtractedPdfDataDto {
 }
 
 export type SlabType =
-  | "monolityczny"
-  | "teriva"
-  | "filigran"
-  | "zerowiec"
-  | "inny";
+  | 'monolityczny'
+  | 'teriva'
+  | 'filigran'
+  | 'zerowiec'
+  | 'inny';
 
 export type ReinforcementElementType =
-  | "wieniec"
-  | "belka"
-  | "strop"
-  | "slup"
-  | "nadproze";
+  | 'wieniec'
+  | 'belka'
+  | 'strop'
+  | 'slup'
+  | 'nadproze';
 
 export const SLAB_TYPES: readonly SlabType[] = [
-  "monolityczny",
-  "teriva",
-  "filigran",
-  "zerowiec",
-  "inny",
+  'monolityczny',
+  'teriva',
+  'filigran',
+  'zerowiec',
+  'inny',
 ] as const;

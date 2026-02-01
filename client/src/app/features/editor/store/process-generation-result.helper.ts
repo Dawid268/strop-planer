@@ -1,6 +1,6 @@
-import { MessageService } from "primeng/api";
-import { type Shape } from "../models/editor.models";
-import { patchState } from "@ngrx/signals";
+import { MessageService } from 'primeng/api';
+import { type Shape } from '../models/editor.models';
+import { patchState } from '@ngrx/signals';
 
 export function processGenerationResult(
   result: any,
@@ -13,7 +13,7 @@ export function processGenerationResult(
   if (result.elements) {
     result.elements.forEach((el: any) => {
       if (
-        (el.elementType === "panel" || el.type === "panel") &&
+        (el.elementType === 'panel' || el.type === 'panel') &&
         el.positionX !== undefined
       ) {
         // Position X/Y from backend are in meters, convert to cm (1 unit = 1 px/cm)
@@ -29,15 +29,15 @@ export function processGenerationResult(
 
         newShapes.push({
           id: `gen_${Math.random().toString(36).substr(2, 9)}`,
-          type: "panel",
+          type: 'panel',
           x: x,
           y: y,
           rotation: 0, // Dimensions already account for rotation
           width: w,
           height: h,
           properties: {
-            fill: isOptimal ? "#4CAF50" : "#FFCC00", // Opaque fill
-            stroke: "#1b5e20",
+            fill: isOptimal ? '#4CAF50' : '#FFCC00', // Opaque fill
+            stroke: '#1b5e20',
             label: el.name,
             isGenerated: true,
           } as any,
@@ -54,12 +54,12 @@ export function processGenerationResult(
     }));
 
     messageService.add({
-      severity: "success",
+      severity: 'success',
       summary: isOptimal
-        ? "Optymalizacja Zakończona"
-        : "Generowanie Zakończone",
+        ? 'Optymalizacja Zakończona'
+        : 'Generowanie Zakończone',
       detail: `Wygenerowano ${newShapes.length} elementów. ${
-        isOptimal ? "Uwzględniono stany magazynowe." : ""
+        isOptimal ? 'Uwzględniono stany magazynowe.' : ''
       }`,
       life: 5000,
     });

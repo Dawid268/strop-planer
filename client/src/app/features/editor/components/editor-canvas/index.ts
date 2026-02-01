@@ -1,1 +1,1 @@
-export * from "./editor-canvas.component";
+export * from './editor-canvas.component';
