@@ -1,5 +1,5 @@
-import { Injectable } from "@angular/core";
-import * as fabric from "fabric";
+import { Injectable } from '@angular/core';
+import * as fabric from 'fabric';
 
 @Injectable()
 export class CanvasHistoryService {

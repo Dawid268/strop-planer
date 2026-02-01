@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: "login",
     loadComponent: () =>
-      import("./features/auth/components/login.component").then(
+      import("./features/auth/components/login/login.component").then(
         (m) => m.LoginComponent,
       ),
     canActivate: [guestGuard],
@@ -14,7 +14,7 @@ export const routes: Routes = [
   {
     path: "register",
     loadComponent: () =>
-      import("./features/auth/components/register.component").then(
+      import("./features/auth/components/register/register.component").then(
         (m) => m.RegisterComponent,
       ),
     canActivate: [guestGuard],

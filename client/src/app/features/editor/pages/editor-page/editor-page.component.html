@@ -24,12 +24,12 @@
 
     <!-- Editor Canvas -->
     <div
-      class="editor-container w-full h-full relative"
-      [class.hidden]="showDxf()"
+      class="editor-page__container w-full h-full relative"
+      [class.editor-page__hidden]="showDxf()"
     >
       <app-editor-canvas #editorCanvas></app-editor-canvas>
       <app-editor-sidebar
-        class="properties-panel shadow-2"
+        class="editor-page__properties-panel shadow-2"
       ></app-editor-sidebar>
     </div>
   </div>

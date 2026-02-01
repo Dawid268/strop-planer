@@ -1,22 +1,22 @@
-import { inject } from "@angular/core";
-import { signalStore, withState, withMethods, patchState } from "@ngrx/signals";
-import { rxMethod } from "@ngrx/signals/rxjs-interop";
-import { pipe, switchMap, tap, forkJoin } from "rxjs";
-import { tapResponse } from "@ngrx/operators";
+import { inject } from '@angular/core';
+import { signalStore, withState, withMethods, patchState } from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { pipe, switchMap, tap, forkJoin } from 'rxjs';
+import { tapResponse } from '@ngrx/operators';
 import {
   withDevtools,
   withCallState,
   setLoading,
   setLoaded,
   setError,
-} from "@angular-architects/ngrx-toolkit";
-import { ProjectsApiService } from "../../projects/services/projects-api.service";
-import { InventoryApiService } from "../../inventory/services/inventory-api.service";
+} from '@angular-architects/ngrx-toolkit';
+import { ProjectsApiService } from '../../projects/services/projects-api.service';
+import { InventoryApiService } from '../../inventory/services/inventory-api.service';
 import type {
   Project,
   ProjectStats,
-} from "../../projects/models/project.model";
-import type { InventorySummary } from "../../inventory/models/inventory.model";
+} from '../../projects/models/project.model';
+import type { InventorySummary } from '../../inventory/models/inventory.model';
 
 interface DashboardState {
   projectStats: ProjectStats | null;
@@ -31,9 +31,9 @@ const initialState: DashboardState = {
 };
 
 export const DashboardStore = signalStore(
-  { providedIn: "root" },
+  { providedIn: 'root' },
   withState(initialState),
-  withDevtools("dashboardStore"),
+  withDevtools('dashboardStore'),
   withCallState(),
   withMethods(
     (

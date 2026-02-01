@@ -83,24 +83,24 @@ export interface FormworkSystemDto {
 }
 
 export type FormworkSystemType =
-  | "PERI_SKYDECK"
-  | "DOKA_DOKAFLEX"
-  | "ULMA_ENKOFLEX"
-  | "MEVA"
-  | "CUSTOM";
+  | 'PERI_SKYDECK'
+  | 'DOKA_DOKAFLEX'
+  | 'ULMA_ENKOFLEX'
+  | 'MEVA'
+  | 'CUSTOM';
 
 export type FormworkElementType =
-  | "panel"
-  | "prop"
-  | "beam"
-  | "head"
-  | "tripod"
-  | "drophead";
+  | 'panel'
+  | 'prop'
+  | 'beam'
+  | 'head'
+  | 'tripod'
+  | 'drophead';
 
 export const FORMWORK_SYSTEMS: readonly FormworkSystemType[] = [
-  "PERI_SKYDECK",
-  "DOKA_DOKAFLEX",
-  "ULMA_ENKOFLEX",
-  "MEVA",
-  "CUSTOM",
+  'PERI_SKYDECK',
+  'DOKA_DOKAFLEX',
+  'ULMA_ENKOFLEX',
+  'MEVA',
+  'CUSTOM',
 ] as const;

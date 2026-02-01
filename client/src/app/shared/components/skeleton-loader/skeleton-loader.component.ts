@@ -6,25 +6,8 @@ import { SkeletonModule } from "primeng/skeleton";
   selector: "app-skeleton-loader",
   standalone: true,
   imports: [CommonModule, SkeletonModule],
-  template: `
-    @for (item of items; track $index) {
-    <p-skeleton
-      [shape]="type === 'circle' ? 'circle' : 'rectangle'"
-      [width]="width"
-      [height]="height"
-      [style.marginBottom]="marginBottom"
-      [borderRadius]="borderRadius"
-    ></p-skeleton>
-    }
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-  ],
+  templateUrl: "./skeleton-loader.component.html",
+  styleUrl: "./skeleton-loader.component.scss",
 })
 export class SkeletonLoaderComponent {
   @Input() type: "text" | "rect" | "circle" = "text";

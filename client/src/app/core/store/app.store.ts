@@ -1,9 +1,5 @@
 import { patchState, signalStore, withMethods, withState } from "@ngrx/signals";
-import { inject } from "@angular/core";
 import { withDevtools } from "@angular-architects/ngrx-toolkit";
-import { ApiService } from "../services/api";
-import { tap } from "rxjs";
-import { rxMethod } from "@ngrx/signals/rxjs-interop";
 
 export interface User {
   id: string;
@@ -30,7 +26,7 @@ export const AppStore = signalStore(
   { providedIn: "root" },
   withState(initialState),
   withDevtools("appStore"),
-  withMethods((store, apiService = inject(ApiService)) => ({
+  withMethods((store) => ({
     setLoading(isLoading: boolean) {
       patchState(store, { isLoading });
     },

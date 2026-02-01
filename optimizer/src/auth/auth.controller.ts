@@ -5,7 +5,18 @@ import {
   UseGuards,
   Body,
   Get,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiBody,
+  ApiResponse,
+} from '@nestjs/swagger';
+
 import { AuthService } from './auth.service';
 import { LocalAuthGuard, AtGuard, RtGuard } from './auth.guard';
 import {
@@ -15,14 +26,6 @@ import {
   UserDto,
 } from './dto/auth.dto';
 import { GetCurrentUserId, GetCurrentUser, Public } from '@common/decorators';
-import { HttpCode, HttpStatus } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiBody,
-  ApiResponse,
-} from '@nestjs/swagger';
 
 import { Request as ExpressRequest } from 'express';
 
@@ -39,9 +42,11 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 5, ttl: 60000 } }) // 5 login attempts per minute
   @ApiOperation({ summary: 'Zaloguj się (email/hasło)' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({ status: 200, type: TokenResponseDto })
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
   public async login(
     @Request() req: RequestWithUser,
   ): Promise<TokenResponseDto> {
@@ -71,8 +76,10 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 registrations per minute
   @ApiOperation({ summary: 'Zarejestruj nowe konto właściciela' })
   @ApiResponse({ status: 201, type: UserDto })
+  @ApiResponse({ status: 429, description: 'Too many registration attempts' })
   public async register(@Body() dto: RegisterDto): Promise<UserDto> {
     return this.authService.register(dto);
   }

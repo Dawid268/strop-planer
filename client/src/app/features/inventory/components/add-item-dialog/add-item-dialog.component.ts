@@ -33,22 +33,36 @@ export class AddItemDialogComponent {
     ? {
         ...this.config.data,
         dimensions: { ...this.config.data.dimensions },
-        quantityAvailable: this.config.data.quantityAvailable,
       }
     : {
+        catalogCode: "",
         name: "",
-        type: "panel" as "panel" | "prop" | "beam" | "accessory",
+        type: "panel" as any,
         manufacturer: "PERI",
         system: "",
-        dimensions: { length: null, width: null, height: null } as any,
+        dimensions: { length: 0, width: 0, height: 0 },
         quantityAvailable: 1,
+        weight: 0,
+        dailyRentPrice: 0,
+        condition: "nowy" as any,
+        warehouseLocation: "",
       };
 
   public readonly typeOptions = [
     { label: "inventory.types.panel", value: "panel" },
     { label: "inventory.types.prop", value: "prop" },
     { label: "inventory.types.beam", value: "beam" },
+    { label: "inventory.types.head", value: "head" },
+    { label: "inventory.types.tripod", value: "tripod" },
+    { label: "inventory.types.drophead", value: "drophead" },
     { label: "inventory.types.accessory", value: "accessory" },
+  ];
+
+  public readonly conditionOptions = [
+    { label: "inventory.conditions.new", value: "nowy" },
+    { label: "inventory.conditions.good", value: "dobry" },
+    { label: "inventory.conditions.used", value: "używany" },
+    { label: "inventory.conditions.repair", value: "do_naprawy" },
   ];
 
   public readonly manufacturerOptions = [
@@ -60,10 +74,14 @@ export class AddItemDialogComponent {
 
   public isValid(): boolean {
     return (
+      !!this.item.catalogCode &&
       !!this.item.name &&
       !!this.item.type &&
       !!this.item.manufacturer &&
-      this.item.quantityAvailable > 0
+      !!this.item.condition &&
+      this.item.quantityAvailable > 0 &&
+      this.item.weight >= 0 &&
+      this.item.dailyRentPrice >= 0
     );
   }
 

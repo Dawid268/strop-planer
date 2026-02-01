@@ -1,19 +1,19 @@
-import { TestBed } from "@angular/core/testing";
+import { TestBed } from '@angular/core/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
-} from "@angular/common/http/testing";
-import { provideHttpClient } from "@angular/common/http";
-import { provideZonelessChangeDetection } from "@angular/core";
+} from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideZonelessChangeDetection } from '@angular/core';
 import {
   PdfApiService,
   ExtractedPdfData,
   BatchUploadResult,
   DrawingType,
-} from "./pdf-api.service";
-import { environment } from "../../../../environments/environment";
+} from './pdf-api.service';
+import { environment } from '../../../../environments/environment';
 
-describe("PdfApiService", () => {
+describe('PdfApiService', () => {
   let service: PdfApiService;
   let httpMock: HttpTestingController;
   const API_URL = environment.apiUrl;
@@ -35,19 +35,19 @@ describe("PdfApiService", () => {
     httpMock.verify();
   });
 
-  describe("uploadPdfSimple", () => {
-    it("should be defined", () => {
+  describe('uploadPdfSimple', () => {
+    it('should be defined', () => {
       expect(service.uploadPdfSimple).toBeDefined();
     });
 
-    it("should send POST to /pdf/upload with file in FormData", () => {
-      const mockFile = new File(["test"], "test.pdf", {
-        type: "application/pdf",
+    it('should send POST to /pdf/upload with file in FormData', () => {
+      const mockFile = new File(['test'], 'test.pdf', {
+        type: 'application/pdf',
       });
       const mockResponse: ExtractedPdfData = {
-        sourceFile: "test.pdf",
+        sourceFile: 'test.pdf',
         extractedAt: new Date(),
-        rawText: "test content",
+        rawText: 'test content',
         warnings: [],
       };
 
@@ -56,14 +56,14 @@ describe("PdfApiService", () => {
       });
 
       const req = httpMock.expectOne(`${API_URL}/pdf/upload`);
-      expect(req.request.method).toBe("POST");
+      expect(req.request.method).toBe('POST');
       expect(req.request.body instanceof FormData).toBeTrue();
       req.flush(mockResponse);
     });
 
-    it("should handle server error", () => {
-      const mockFile = new File(["test"], "test.pdf", {
-        type: "application/pdf",
+    it('should handle server error', () => {
+      const mockFile = new File(['test'], 'test.pdf', {
+        type: 'application/pdf',
       });
 
       service.uploadPdfSimple(mockFile).subscribe({
@@ -73,38 +73,38 @@ describe("PdfApiService", () => {
       });
 
       const req = httpMock.expectOne(`${API_URL}/pdf/upload`);
-      req.flush("Error", { status: 500, statusText: "Server Error" });
+      req.flush('Error', { status: 500, statusText: 'Server Error' });
     });
   });
 
-  describe("uploadBatch", () => {
-    it("should be defined", () => {
+  describe('uploadBatch', () => {
+    it('should be defined', () => {
       expect(service.uploadBatch).toBeDefined();
     });
 
-    it("should send POST to /pdf/upload-batch with multiple files", () => {
+    it('should send POST to /pdf/upload-batch with multiple files', () => {
       const mockFiles = [
-        new File(["test1"], "strop.pdf", { type: "application/pdf" }),
-        new File(["test2"], "konstrukcja.pdf", { type: "application/pdf" }),
+        new File(['test1'], 'strop.pdf', { type: 'application/pdf' }),
+        new File(['test2'], 'konstrukcja.pdf', { type: 'application/pdf' }),
       ];
       const mockResponse: BatchUploadResult = {
         files: [
           {
-            fileName: "strop.pdf",
-            drawingType: "slab",
+            fileName: 'strop.pdf',
+            drawingType: 'slab',
             confidence: 95,
             isRecommended: true,
             extractedData: null,
           },
           {
-            fileName: "konstrukcja.pdf",
-            drawingType: "structure",
+            fileName: 'konstrukcja.pdf',
+            drawingType: 'structure',
             confidence: 85,
             isRecommended: true,
             extractedData: null,
           },
         ],
-        recommendedFiles: ["strop.pdf", "konstrukcja.pdf"],
+        recommendedFiles: ['strop.pdf', 'konstrukcja.pdf'],
         totalFiles: 2,
         successfullyParsed: 2,
       };
@@ -112,16 +112,16 @@ describe("PdfApiService", () => {
       service.uploadBatch(mockFiles).subscribe((response) => {
         expect(response.totalFiles).toBe(2);
         expect(response.files.length).toBe(2);
-        expect(response.recommendedFiles).toContain("strop.pdf");
+        expect(response.recommendedFiles).toContain('strop.pdf');
       });
 
       const req = httpMock.expectOne(`${API_URL}/pdf/upload-batch`);
-      expect(req.request.method).toBe("POST");
+      expect(req.request.method).toBe('POST');
       expect(req.request.body instanceof FormData).toBeTrue();
       req.flush(mockResponse);
     });
 
-    it("should handle empty file array", () => {
+    it('should handle empty file array', () => {
       const mockResponse: BatchUploadResult = {
         files: [],
         recommendedFiles: [],
@@ -138,79 +138,79 @@ describe("PdfApiService", () => {
     });
   });
 
-  describe("uploadPdf (with progress)", () => {
-    it("should be defined", () => {
+  describe('uploadPdf (with progress)', () => {
+    it('should be defined', () => {
       expect(service.uploadPdf).toBeDefined();
     });
 
-    it("should return observable of UploadResponse type", () => {
-      const mockFile = new File(["test"], "test.pdf", {
-        type: "application/pdf",
+    it('should return observable of UploadResponse type', () => {
+      const mockFile = new File(['test'], 'test.pdf', {
+        type: 'application/pdf',
       });
 
       service.uploadPdf(mockFile).subscribe((response) => {
         expect(response.type).toBeDefined();
-        expect(["progress", "complete"]).toContain(response.type);
+        expect(['progress', 'complete']).toContain(response.type);
       });
 
       const req = httpMock.expectOne(`${API_URL}/pdf/upload`);
-      expect(req.request.method).toBe("POST");
+      expect(req.request.method).toBe('POST');
       req.flush({
-        sourceFile: "test.pdf",
+        sourceFile: 'test.pdf',
         extractedAt: new Date(),
-        rawText: "",
+        rawText: '',
         warnings: [],
       });
     });
   });
 
-  describe("getDrawingTypeLabel", () => {
-    it("should be defined", () => {
+  describe('getDrawingTypeLabel', () => {
+    it('should be defined', () => {
       expect(service.getDrawingTypeLabel).toBeDefined();
     });
 
     it("should return 'Strop' for 'slab'", () => {
-      expect(service.getDrawingTypeLabel("slab")).toBe("Strop");
+      expect(service.getDrawingTypeLabel('slab')).toBe('Strop');
     });
 
     it("should return 'Konstrukcja' for 'structure'", () => {
-      expect(service.getDrawingTypeLabel("structure")).toBe("Konstrukcja");
+      expect(service.getDrawingTypeLabel('structure')).toBe('Konstrukcja');
     });
 
     it("should return 'Zbrojenie' for 'reinforcement'", () => {
-      expect(service.getDrawingTypeLabel("reinforcement")).toBe("Zbrojenie");
+      expect(service.getDrawingTypeLabel('reinforcement')).toBe('Zbrojenie');
     });
 
     it("should return 'Architektura' for 'architecture'", () => {
-      expect(service.getDrawingTypeLabel("architecture")).toBe("Architektura");
+      expect(service.getDrawingTypeLabel('architecture')).toBe('Architektura');
     });
 
     it("should return 'Więźba' for 'roof'", () => {
-      expect(service.getDrawingTypeLabel("roof")).toBe("Więźba");
+      expect(service.getDrawingTypeLabel('roof')).toBe('Więźba');
     });
 
     it("should return 'Fundamenty' for 'foundation'", () => {
-      expect(service.getDrawingTypeLabel("foundation")).toBe("Fundamenty");
+      expect(service.getDrawingTypeLabel('foundation')).toBe('Fundamenty');
     });
 
     it("should return 'Inne' for 'other'", () => {
-      expect(service.getDrawingTypeLabel("other")).toBe("Inne");
+      expect(service.getDrawingTypeLabel('other')).toBe('Inne');
     });
 
-    it("should handle all DrawingType values", () => {
+    it('should handle all DrawingType values', () => {
       const types: DrawingType[] = [
-        "slab",
-        "structure",
-        "reinforcement",
-        "architecture",
-        "roof",
-        "foundation",
-        "other",
+        'slab',
+        'structure',
+        'reinforcement',
+        'architecture',
+        'roof',
+        'foundation',
+        'other',
       ];
       types.forEach((type) => {
         const label = service.getDrawingTypeLabel(type);
         expect(label).toBeDefined();
-        expect(typeof label).toBe("string");
+        expect(typeof label).toBe('string');
         expect(label.length).toBeGreaterThan(0);
       });
     });

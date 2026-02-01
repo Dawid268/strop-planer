@@ -1,28 +1,28 @@
-import { computed, inject } from "@angular/core";
+import { computed, inject } from '@angular/core';
 import {
   signalStore,
   withState,
   withComputed,
   withMethods,
   patchState,
-} from "@ngrx/signals";
-import { rxMethod } from "@ngrx/signals/rxjs-interop";
-import { pipe, switchMap, tap } from "rxjs";
-import { tapResponse } from "@ngrx/operators";
+} from '@ngrx/signals';
+import { rxMethod } from '@ngrx/signals/rxjs-interop';
+import { pipe, switchMap, tap } from 'rxjs';
+import { tapResponse } from '@ngrx/operators';
 import {
   withDevtools,
   withCallState,
   setLoading,
   setLoaded,
   setError,
-} from "@angular-architects/ngrx-toolkit";
-import { InventoryApiService } from "../services/inventory-api.service";
+} from '@angular-architects/ngrx-toolkit';
+import { InventoryApiService } from '../services/inventory-api.service';
 import type {
   InventoryItem,
   CreateInventoryItemDto,
   UpdateInventoryItemDto,
   InventorySummary,
-} from "../models/inventory.model";
+} from '../models/inventory.model';
 
 interface InventoryState {
   items: InventoryItem[];
@@ -37,14 +37,14 @@ const initialState: InventoryState = {
 };
 
 export const InventoryStore = signalStore(
-  { providedIn: "root" },
+  { providedIn: 'root' },
   withState(initialState),
-  withDevtools("inventoryStore"),
+  withDevtools('inventoryStore'),
   withCallState(),
   withComputed((store) => ({
     itemCount: computed(() => store.items().length),
-    panels: computed(() => store.items().filter((i) => i.type === "panel")),
-    props: computed(() => store.items().filter((i) => i.type === "prop")),
+    panels: computed(() => store.items().filter((i) => i.type === 'panel')),
+    props: computed(() => store.items().filter((i) => i.type === 'prop')),
     filteredItems: computed(() => {
       const items = store.items();
       const f = store.filters();

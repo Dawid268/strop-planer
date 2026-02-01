@@ -10,83 +10,17 @@
     (drop)="onDrop($event)"
   >
     @if (selectedFiles().length === 0) {
-    <!-- Empty State -->
-    <div class="drop-zone__content flex flex-column align-items-center gap-2">
-      <i class="pi pi-cloud-upload text-6xl text-primary opacity-70"></i>
-      <h3 class="m-0 text-xl font-medium text-900">
-        {{ t("fileUpload.title") }}
-      </h3>
-      <p class="m-0 text-sm text-600">{{ t("fileUpload.subtitle") }}</p>
-      <p class="m-0 text-xs text-600 mt-2">
-        {{ t("fileUpload.supportedFormats") }}:
-        <strong class="text-900">PDF, DWG, DXF</strong>
-      </p>
-      <input
-        type="file"
-        class="absolute inset-0 opacity-0 cursor-pointer"
-        [accept]="acceptedTypes"
-        [multiple]="multiple()"
-        (change)="onFileInputChange($event)"
-      />
-    </div>
-    } @else {
-    <!-- Files Selected -->
-    <div class="files-list text-left">
-      <div
-        class="files-header flex align-items-center gap-2 pb-3 mb-3 border-bottom-1 border-200 font-medium"
-      >
-        <i class="pi pi-folder-open text-primary"></i>
-        <span class="flex-grow-1">{{
-          t("fileUpload.filesUploaded", { count: selectedFiles().length })
-        }}</span>
-        <p-button
-          icon="pi pi-trash"
-          [text]="true"
-          [rounded]="true"
-          severity="danger"
-          (click)="clearFiles()"
-          pTooltip="Wyczyść wszystko"
-          tooltipPosition="left"
-        ></p-button>
-      </div>
-
-      <div
-        class="files-items flex flex-column gap-2 overflow-y-auto"
-        style="max-height: 250px"
-      >
-        @for (file of selectedFiles(); track file.name; let i = $index) {
-        <div
-          class="file-item flex align-items-center gap-3 p-2 bg-white border-round-lg shadow-1"
-        >
-          <i
-            [class]="'pi ' + getFileIcon(file.type) + ' text-2xl'"
-            [class.text-red-500]="file.type === 'pdf'"
-            [class.text-blue-500]="file.type !== 'pdf'"
-          ></i>
-          <div class="file-info flex-grow-1 flex flex-column overflow-hidden">
-            <span class="file-name text-sm font-medium text-900 truncate">{{
-              file.name
-            }}</span>
-            <span class="file-size text-xs text-600">{{
-              formatFileSize(file.size)
-            }}</span>
-          </div>
-          <p-button
-            icon="pi pi-times"
-            [text]="true"
-            [rounded]="true"
-            severity="secondary"
-            (click)="removeFile(i)"
-            size="small"
-          ></p-button>
-        </div>
-        }
-      </div>
-
-      <!-- Add more files -->
-      <div
-        class="add-more relative flex align-items-center justify-content-center gap-2 mt-3 p-3 border-1 border-dashed border-300 border-round-lg text-sm text-600 cursor-pointer hover:border-primary hover:text-primary hover:bg-surface-100 transition-all transition-duration-200"
-      >
+      <!-- Empty State -->
+      <div class="drop-zone__content flex flex-column align-items-center gap-2">
+        <i class="pi pi-cloud-upload text-6xl text-primary opacity-70"></i>
+        <h3 class="m-0 text-xl font-medium text-900">
+          {{ t("fileUpload.title") }}
+        </h3>
+        <p class="m-0 text-sm text-600">{{ t("fileUpload.subtitle") }}</p>
+        <p class="m-0 text-xs text-600 mt-2">
+          {{ t("fileUpload.supportedFormats") }}:
+          <strong class="text-900">PDF, DWG, DXF</strong>
+        </p>
         <input
           type="file"
           class="absolute inset-0 opacity-0 cursor-pointer"
@@ -94,25 +28,94 @@
           [multiple]="multiple()"
           (change)="onFileInputChange($event)"
         />
-        <i class="pi pi-plus"></i>
-        <span>{{ t("fileUpload.addMore") }}</span>
       </div>
-    </div>
+    } @else {
+      <!-- Files Selected -->
+      <div class="files-list text-left">
+        <div
+          class="files-header flex align-items-center gap-2 pb-3 mb-3 border-bottom-1 border-200 font-medium"
+        >
+          <i class="pi pi-folder-open text-primary"></i>
+          <span class="flex-grow-1">{{
+            t("fileUpload.filesUploaded", { count: selectedFiles().length })
+          }}</span>
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            [rounded]="true"
+            severity="danger"
+            (click)="clearFiles()"
+            pTooltip="Wyczyść wszystko"
+            tooltipPosition="left"
+          ></p-button>
+        </div>
 
-    @if (uploadProgress()) {
-    <p-progressBar
-      [value]="uploadProgress()?.percent"
-      styleClass="mt-3 h-1rem border-round"
-    ></p-progressBar>
-    } }
+        <div
+          class="files-items flex flex-column gap-2 overflow-y-auto"
+          style="max-height: 250px"
+        >
+          @for (file of selectedFiles(); track file.name; let i = $index) {
+            <div
+              class="file-item flex align-items-center gap-3 p-2 bg-white border-round-lg shadow-1"
+            >
+              <i
+                [class]="'pi ' + getFileIcon(file.type) + ' text-2xl'"
+                [class.text-red-500]="file.type === 'pdf'"
+                [class.text-blue-500]="file.type !== 'pdf'"
+              ></i>
+              <div
+                class="file-info flex-grow-1 flex flex-column overflow-hidden"
+              >
+                <span class="file-name text-sm font-medium text-900 truncate">{{
+                  file.name
+                }}</span>
+                <span class="file-size text-xs text-600">{{
+                  formatFileSize(file.size)
+                }}</span>
+              </div>
+              <p-button
+                icon="pi pi-times"
+                [text]="true"
+                [rounded]="true"
+                severity="secondary"
+                (click)="removeFile(i)"
+                size="small"
+              ></p-button>
+            </div>
+          }
+        </div>
+
+        <!-- Add more files -->
+        <div
+          class="add-more relative flex align-items-center justify-content-center gap-2 mt-3 p-3 border-1 border-dashed border-300 border-round-lg text-sm text-600 cursor-pointer hover:border-primary hover:text-primary hover:bg-surface-100 transition-all transition-duration-200"
+        >
+          <input
+            type="file"
+            class="absolute inset-0 opacity-0 cursor-pointer"
+            [accept]="acceptedTypes"
+            [multiple]="multiple()"
+            (change)="onFileInputChange($event)"
+          />
+          <i class="pi pi-plus"></i>
+          <span>{{ t("fileUpload.addMore") }}</span>
+        </div>
+      </div>
+
+      @if (uploadProgress()) {
+        <p-progressBar
+          [value]="uploadProgress()?.percent"
+          styleClass="mt-3 h-1rem border-round"
+        ></p-progressBar>
+      }
+    }
   </div>
 
   <!-- Error Message -->
   @if (errorMessage()) {
-  <p-message
-    severity="error"
-    [text]="errorMessage() || ''"
-    styleClass="w-full mt-3"
-  ></p-message>
+    <p-message
+      severity="error"
+      [text]="errorMessage() || ''"
+      styleClass="w-full mt-3"
+    ></p-message>
   }
 </div>

@@ -12,12 +12,17 @@ import { provideTransloco } from "@jsverse/transloco";
 import { providePrimeNG } from "primeng/config";
 import Aura from "@primeng/themes/aura";
 import { TranslocoHttpLoader } from "./core/i18n/transloco-loader";
+import { ErrorHandler } from "@angular/core";
+import { GlobalErrorHandler } from "./core/handlers/global-error-handler";
+import { errorInterceptor } from "./core/interceptors/error.interceptor";
+import { MessageService, ConfirmationService } from "primeng/api";
+import { ErrorHandlerService } from "./core/services/error-handler.service";
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     provideAnimationsAsync(),
     provideTransloco({
       config: {
@@ -39,5 +44,9 @@ export const appConfig: ApplicationConfig = {
       },
       ripple: true,
     }),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    MessageService,
+    ConfirmationService,
+    ErrorHandlerService,
   ],
 };

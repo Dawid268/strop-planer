@@ -6,26 +6,40 @@ export interface InventoryItemDimensions {
 
 export interface InventoryItem {
   id: string;
+  catalogCode: string;
   name: string;
-  type: "panel" | "prop" | "beam" | "accessory";
+  type:
+    | "panel"
+    | "prop"
+    | "beam"
+    | "accessory"
+    | "head"
+    | "tripod"
+    | "drophead";
   system: string;
   manufacturer: string;
   dimensions: InventoryItemDimensions;
-  quantityAvailable: number; // This is TOTAL quantity in backend logic
+  quantityAvailable: number;
   quantityReserved: number;
-  dailyRentPrice?: number;
+  weight: number;
+  dailyRentPrice: number;
+  condition: "nowy" | "dobry" | "używany" | "do_naprawy";
   warehouseLocation?: string;
+  isActive: boolean;
 }
 
 export interface CreateInventoryItemDto {
+  catalogCode: string;
   name: string;
   type: InventoryItem["type"];
   system: string;
   manufacturer: string;
   dimensions: InventoryItemDimensions;
   quantityAvailable: number;
-  pricePerUnit?: number;
-  location?: string;
+  weight: number;
+  dailyRentPrice: number;
+  condition: InventoryItem["condition"];
+  warehouseLocation?: string;
 }
 
 export interface UpdateInventoryItemDto {

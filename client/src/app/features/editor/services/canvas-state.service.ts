@@ -1,13 +1,10 @@
 import { Injectable, inject, signal } from "@angular/core";
 import * as fabric from "fabric";
-import { EditorStore } from "../store/editor.store";
-import { Shape } from "../models/editor.models";
-import { CustomFabricObject, CANVAS_COLORS } from "../utils/canvas.utils";
+import { CustomFabricObject } from "../utils/canvas.utils";
 import { CanvasHistoryService } from "./canvas-history.service";
 
 @Injectable()
 export class CanvasStateService {
-  private readonly store = inject(EditorStore);
   private readonly historyService = inject(CanvasHistoryService);
 
   public readonly isLoading = signal(false);

@@ -1,1 +1,5 @@
-{"message":"Projekt f6ce9db1-a8d2-4d68-a227-23003b11ceb2 nie znaleziony","error":"Not Found","statusCode":404}
+{
+  "message": "Projekt f6ce9db1-a8d2-4d68-a227-23003b11ceb2 nie znaleziony",
+  "error": "Not Found",
+  "statusCode": 404
+}

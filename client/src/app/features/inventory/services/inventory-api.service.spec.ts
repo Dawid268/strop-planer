@@ -27,6 +27,11 @@ describe("InventoryApiService", () => {
     dimensions: "150x75cm",
     quantityAvailable: 100,
     quantityReserved: 20,
+    catalogCode: "SKY-150-75",
+    weight: 25.5,
+    dailyRentPrice: 1.5,
+    condition: "dobry",
+    isActive: true,
   };
 
   beforeEach(() => {
@@ -35,6 +40,8 @@ describe("InventoryApiService", () => {
         InventoryApiService,
         provideHttpClient(),
         provideHttpClientTesting(),
+        // If InventoryApiService depends on ProjectsService, uncomment and adjust this line:
+        // { provide: ProjectsService, useValue: projectsServiceMock },
       ],
     });
     service = TestBed.inject(InventoryApiService);
@@ -148,6 +155,10 @@ describe("InventoryApiService", () => {
         system: "Dokaflex",
         dimensions: "100x50cm",
         quantityAvailable: 50,
+        catalogCode: "DOKA-100-50",
+        weight: 15,
+        dailyRentPrice: 1.2,
+        condition: "new" as any,
       };
 
       service.create(createDto).subscribe((item) => {

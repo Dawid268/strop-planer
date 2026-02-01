@@ -2,6 +2,8 @@ import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs";
 import { environment } from "../../../../environments/environment";
+import { ApiResponse } from "@core/models/api-response.model";
+import { map } from "rxjs/operators";
 
 export interface SlabDataDto {
   id: string;
@@ -40,6 +42,8 @@ export class FormworkApiService {
   private readonly API_URL = `${environment.apiUrl}/formwork`;
 
   public calculate(dto: CalculateRequestDto): Observable<any> {
-    return this.http.post<any>(`${this.API_URL}/calculate`, dto);
+    return this.http
+      .post<ApiResponse<any>>(`${this.API_URL}/calculate`, dto)
+      .pipe(map((res) => res.data));
   }
 }

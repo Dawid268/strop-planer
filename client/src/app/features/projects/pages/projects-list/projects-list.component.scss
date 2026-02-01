@@ -1,6 +1,23 @@
-.no-underline {
-  text-decoration: none;
+.projects-list {
+  &__header {
+    margin-bottom: 2rem;
+  }
+
+  &__grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  &__no-underline {
+    text-decoration: none;
+  }
 }
-::ng-deep .projects-card .p-card-content {
-  padding: 0 !important;
+
+// Custom PrimeNG override via CSS variable if possible, or targeted class
+.projects-list__table-card {
+  --p-card-content-padding: 0;
+
+  .p-card-content {
+    padding: 0 !important;
+  }
 }
