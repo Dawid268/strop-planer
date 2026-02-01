@@ -10,10 +10,40 @@ import { InkscapeConversionService } from './inkscape-conversion.service';
 
 const execAsync = promisify(exec);
 
+/**
+ * Polygon structure returned by Python extraction script v2.0
+ */
+interface ExtractedPolygon {
+  points: Array<{ x: number; y: number }>;
+  area: number;
+  perimeter: number;
+  is_hole: boolean;
+  point_count: number;
+}
+
+/**
+ * Metadata from Python extraction script
+ */
+interface ExtractionMetadata {
+  width: number;
+  height: number;
+  viewBox: string;
+  segmentCount: number;
+  polygonCount: number;
+  holeCount: number;
+  version: string;
+}
+
+/**
+ * Full result from Python geometry extraction script v2.0
+ */
 interface GeometryExtractionResult {
-  polygons?: Array<{ points: Array<{ x: number; y: number }> }>;
+  polygons?: ExtractedPolygon[];
+  holes?: ExtractedPolygon[];
+  segments?: Array<Array<{ x: number; y: number }>>;
+  metadata?: ExtractionMetadata;
   error?: string;
-  [key: string]: unknown;
+  trace?: string;
 }
 
 @Injectable()
@@ -152,26 +182,44 @@ export class GeometryService {
               fs.copyFileSync(validSvgPath, publicPath);
               const svgUrl = `/uploads/converted/${publicFileName}`;
 
-              const layerId = `layer-vectors-${Date.now()}`;
+              const timestamp = Date.now();
+              const layerId = `layer-vectors-${timestamp}`;
+
+              // Create shapes from polygons
+              const boundaryShapes = result.polygons.map((poly, idx) => ({
+                id: `ai-boundary-${timestamp}-${idx}`,
+                type: 'polygon' as const,
+                points: poly.points,
+                area: poly.area,
+                perimeter: poly.perimeter,
+                isHole: false,
+                x: 0,
+                y: 0,
+              }));
+
+              // Create shapes from holes if present
+              const holeShapes = (result.holes || []).map((hole, idx) => ({
+                id: `ai-hole-${timestamp}-${idx}`,
+                type: 'polygon' as const,
+                points: hole.points,
+                area: hole.area,
+                perimeter: hole.perimeter,
+                isHole: true,
+                x: 0,
+                y: 0,
+              }));
+
               const editorData = {
                 tabs: [
                   {
-                    id: `tab-${Date.now()}`,
+                    id: `tab-${timestamp}`,
                     name: 'Strona 1',
                     active: true,
                     layers: [
                       {
                         id: layerId,
-                        name: 'Wektory (AI)',
-                        shapes: result.polygons.map((poly, idx) => ({
-                          id: `ai-poly-${Date.now()}-${idx}`,
-                          type: 'polygon',
-                          points: Array.isArray(poly)
-                            ? poly
-                            : poly.points || poly,
-                          x: 0,
-                          y: 0,
-                        })),
+                        name: 'Kontury stropu (AI)',
+                        shapes: boundaryShapes,
                         isVisible: true,
                         isLocked: false,
                         opacity: 1,
@@ -179,7 +227,17 @@ export class GeometryService {
                         type: 'ai_vectors',
                       },
                       {
-                        id: `layer-user-${Date.now()}`,
+                        id: `layer-holes-${timestamp}`,
+                        name: 'Otwory (AI)',
+                        shapes: holeShapes,
+                        isVisible: true,
+                        isLocked: false,
+                        opacity: 0.5,
+                        color: '#f44336',
+                        type: 'ai_holes',
+                      },
+                      {
+                        id: `layer-user-${timestamp}`,
                         name: 'Warstwa użytkownika',
                         shapes: [],
                         isVisible: true,
@@ -191,6 +249,7 @@ export class GeometryService {
                     ],
                   },
                 ],
+                metadata: result.metadata,
               };
 
               await this.projectRepository.update(projectId, {
@@ -198,10 +257,15 @@ export class GeometryService {
                 editorData: JSON.stringify(editorData),
                 svgPath: svgUrl,
               });
-              this.logger.log(`Extracted ${result.polygons?.length} polygons.`);
-              if (result.polygons?.length > 0) {
+              const polygonCount = result.polygons?.length ?? 0;
+              const holeCount = result.holes?.length ?? 0;
+              this.logger.log(
+                `Extracted ${polygonCount} boundaries, ${holeCount} holes.`,
+              );
+              if (polygonCount > 0 && result.polygons) {
+                const firstPoly = result.polygons[0];
                 this.logger.log(
-                  `First Polygon Preview: ${JSON.stringify(result.polygons[0])}`,
+                  `First polygon: ${firstPoly.point_count} points, area: ${firstPoly.area.toFixed(2)}`,
                 );
               }
               this.logger.log(`Updated project ${projectId} with geometry`);
