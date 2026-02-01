@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe, LoggerService } from '@nestjs/common';
+import { ValidationPipe, LoggerService, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from '@common/filters/http-exception.filter';
 import { TransformInterceptor } from '@common/interceptors/transform.interceptor';
 import { getCorsConfig, EnvironmentVariables } from '@config/index';
+import { API_CONFIG, APP_CONFIG } from '@common/constants';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -16,7 +17,13 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(logger);
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix(API_CONFIG.PREFIX);
+
+  // Enable URI-based API versioning: /api/v1/...
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: API_CONFIG.VERSION,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -36,7 +43,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors(corsConfig);
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Szalunki Optimizer API')
+    .setTitle(APP_CONFIG.NAME)
     .setDescription(
       `
 ## API do optymalizacji szalunków stropowych
@@ -48,12 +55,12 @@ async function bootstrap(): Promise<void> {
 - **Porównanie systemów** - PERI, DOKA, ULMA, MEVA
 
 ### Workflow:
-1. Wgraj PDF z projektem stropu \`POST /pdf/upload\`
-2. Oblicz układ szalunku \`POST /formwork/calculate\`
-3. Zoptymalizuj rozwiązanie \`POST /formwork/optimize/{layoutId}\`
+1. Wgraj PDF z projektem stropu \`POST /api/v1/pdf/upload\`
+2. Oblicz układ szalunku \`POST /api/v1/formwork/calculate\`
+3. Zoptymalizuj rozwiązanie \`POST /api/v1/formwork/optimize/{layoutId}\`
     `,
     )
-    .setVersion('1.0.0')
+    .setVersion(APP_CONFIG.VERSION)
     .addBearerAuth()
     .addTag('Auth', 'Autentykacja i autoryzacja')
     .addTag('PDF', 'Parsowanie projektów konstrukcyjnych')
@@ -64,8 +71,8 @@ async function bootstrap(): Promise<void> {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
-    customSiteTitle: 'Szalunki Optimizer API',
+  SwaggerModule.setup(API_CONFIG.DOCS_PATH, app, document, {
+    customSiteTitle: APP_CONFIG.NAME,
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
     customCss: `
       .swagger-ui .topbar { background-color: #1a1a2e; }
@@ -75,10 +82,10 @@ async function bootstrap(): Promise<void> {
 
   app.enableShutdownHooks();
 
-  const port = configService.get<number>('PORT') ?? 3000;
+  const port = configService.get<number>('PORT') ?? APP_CONFIG.DEFAULT_PORT;
   await app.listen(port);
 
-  const env = configService.get<string>('NODE_ENV') ?? 'development';
+  const env = configService.get<string>('NODE_ENV') ?? APP_CONFIG.DEFAULT_ENV;
   logger.log(`
   ╔═══════════════════════════════════════════════════════════╗
   ║                                                           ║

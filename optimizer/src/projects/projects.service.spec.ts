@@ -38,6 +38,7 @@ describe('ProjectsService', () => {
     mockRepository = {
       find: jest.fn(),
       findOne: jest.fn(),
+      findAndCount: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
@@ -281,6 +282,143 @@ describe('ProjectsService', () => {
       expect(mockRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           editorData: JSON.stringify(editorData),
+        }),
+      );
+    });
+  });
+
+  describe('findAllPaginated(userId, page, limit): Promise<{ data, total }>', () => {
+    it('should return paginated projects with total count', async () => {
+      const projects = [mockProject, { ...mockProject, id: 'project-789' }];
+      mockRepository.findAndCount.mockResolvedValue([projects, 10]);
+
+      const result = await service.findAllPaginated(mockUserId, 1, 20);
+
+      expect(result.data).toHaveLength(2);
+      expect(result.total).toBe(10);
+    });
+
+    it('should apply pagination parameters correctly', async () => {
+      mockRepository.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAllPaginated(mockUserId, 2, 5);
+
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { userId: mockUserId },
+        order: { updatedAt: 'DESC' },
+        skip: 5,
+        take: 5,
+      });
+    });
+
+    it('should use default pagination values', async () => {
+      mockRepository.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAllPaginated(mockUserId);
+
+      // Default pagination: page=1, limit=10 (from PAGINATION constants)
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { userId: mockUserId },
+        order: { updatedAt: 'DESC' },
+        skip: 0,
+        take: 10,
+      });
+    });
+  });
+
+  describe('attachPdfData(id, userId, pdfData): Promise<FormworkProjectEntity>', () => {
+    it('should attach PDF data to project', async () => {
+      const pdfData = 'extracted pdf content';
+      const updatedProject = { ...mockProject, extractedPdfData: pdfData };
+      mockRepository.findOne.mockResolvedValue(mockProject);
+      mockRepository.save.mockResolvedValue(updatedProject);
+
+      const result = await service.attachPdfData(
+        mockProjectId,
+        mockUserId,
+        pdfData,
+      );
+
+      expect(result.extractedPdfData).toBe(pdfData);
+    });
+
+    it('should throw NotFoundException when project not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.attachPdfData('non-existent', mockUserId, 'data'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateArtifactPaths(id, paths, userId?): Promise<FormworkProjectEntity>', () => {
+    it('should update artifact paths', async () => {
+      const paths = {
+        sourcePdfPath: '/uploads/test.pdf',
+        svgPath: '/uploads/test.svg',
+      };
+      const updatedProject = { ...mockProject, ...paths };
+      mockRepository.findOne.mockResolvedValue({ ...mockProject });
+      mockRepository.save.mockResolvedValue(updatedProject);
+
+      const result = await service.updateArtifactPaths(mockProjectId, paths);
+
+      expect(result.sourcePdfPath).toBe(paths.sourcePdfPath);
+      expect(result.svgPath).toBe(paths.svgPath);
+    });
+
+    it('should include userId in where clause when provided', async () => {
+      mockRepository.findOne.mockResolvedValue(mockProject);
+      mockRepository.save.mockResolvedValue(mockProject);
+
+      await service.updateArtifactPaths(
+        mockProjectId,
+        { dxfPath: '/test.dxf' },
+        mockUserId,
+      );
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockProjectId, userId: mockUserId },
+      });
+    });
+
+    it('should not include userId when not provided', async () => {
+      mockRepository.findOne.mockResolvedValue(mockProject);
+      mockRepository.save.mockResolvedValue(mockProject);
+
+      await service.updateArtifactPaths(mockProjectId, {
+        dxfPath: '/test.dxf',
+      });
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockProjectId },
+      });
+    });
+
+    it('should throw NotFoundException when project not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.updateArtifactPaths('non-existent', { svgPath: '/test.svg' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should update only provided paths', async () => {
+      const existingProject = {
+        ...mockProject,
+        sourcePdfPath: '/existing.pdf',
+        dxfPath: '/existing.dxf',
+      };
+      mockRepository.findOne.mockResolvedValue({ ...existingProject });
+      mockRepository.save.mockImplementation((p) => Promise.resolve(p));
+
+      await service.updateArtifactPaths(mockProjectId, { svgPath: '/new.svg' });
+
+      expect(mockRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourcePdfPath: '/existing.pdf',
+          dxfPath: '/existing.dxf',
+          svgPath: '/new.svg',
         }),
       );
     });

@@ -1,4 +1,4 @@
 import { Controller } from '@nestjs/common';
 
-@Controller('slab')
+@Controller({ version: '1', path: 'slab' })
 export class SlabController {}

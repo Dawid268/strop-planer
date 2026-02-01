@@ -16,11 +16,12 @@ export class RtStrategy extends PassportStrategy(
   Strategy,
   AUTH_CONSTANTS.STRATEGIES.JWT_REFRESH,
 ) {
-  constructor(config: ConfigService) {
+  public constructor(config: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey:
-        config.get<string>(AUTH_CONSTANTS.CONFIG.JWT_SECRET) || 'secret',
+        config.get<string>(AUTH_CONSTANTS.CONFIG.JWT_SECRET) ||
+        AUTH_CONSTANTS.DEFAULTS.JWT_SECRET,
       passReqToCallback: true,
     });
   }

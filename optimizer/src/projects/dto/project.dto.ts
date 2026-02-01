@@ -7,7 +7,9 @@ import {
   Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { ExtractedPdfData } from '../../slab/interfaces/slab.interface';
+import { SlabType } from '../../slab/enums/slab.enums';
 import {
   FormworkLayout,
   OptimizationResult,
@@ -16,6 +18,8 @@ import {
   EditorData,
   ExtractedSlabGeometry,
 } from '../interfaces/project.interface';
+import { PROJECT_STATUS, ProjectStatusType } from '@common/constants';
+import { FORMWORK_SYSTEMS, FormworkSystemType } from '@common/constants';
 
 export class CreateProjectDto {
   @ApiProperty({ example: 'Budynek A - Parter' })
@@ -51,14 +55,23 @@ export class CreateProjectDto {
   @Max(10)
   public floorHeight!: number;
 
-  @ApiPropertyOptional({ example: 'monolityczny' })
+  @ApiPropertyOptional({
+    example: 'monolityczny',
+    enum: SlabType,
+    description: 'Typ stropu',
+  })
   @IsOptional()
-  @IsString()
-  public slabType?: string;
+  @IsEnum(SlabType)
+  public slabType?: SlabType;
 
-  @ApiPropertyOptional({ example: 'PERI_SKYDECK' })
-  @IsString()
-  public formworkSystem?: string;
+  @ApiPropertyOptional({
+    example: 'PERI_SKYDECK',
+    enum: Object.values(FORMWORK_SYSTEMS),
+    description: 'System szalunkowy',
+  })
+  @IsOptional()
+  @IsEnum(FORMWORK_SYSTEMS)
+  public formworkSystem?: FormworkSystemType;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -102,10 +115,13 @@ export class UpdateProjectDto {
   @IsString()
   public description?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    enum: Object.values(PROJECT_STATUS),
+    description: 'Status projektu',
+  })
   @IsOptional()
-  @IsEnum(['draft', 'calculated', 'optimized', 'sent', 'completed'])
-  public status?: 'draft' | 'calculated' | 'optimized' | 'sent' | 'completed';
+  @IsEnum(PROJECT_STATUS)
+  public status?: ProjectStatusType;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -127,15 +143,15 @@ export class UpdateProjectDto {
   @IsNumber()
   public floorHeight?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: SlabType })
   @IsOptional()
-  @IsString()
-  public slabType?: string;
+  @IsEnum(SlabType)
+  public slabType?: SlabType;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: Object.values(FORMWORK_SYSTEMS) })
   @IsOptional()
-  @IsString()
-  public formworkSystem?: string;
+  @IsEnum(FORMWORK_SYSTEMS)
+  public formworkSystem?: FormworkSystemType;
 
   @ApiPropertyOptional()
   @IsOptional()

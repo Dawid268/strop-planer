@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FLOOR_PLAN_CONSTANTS } from './constants/floor-plan.constants';
 
 @ApiTags('Floor Plans DXF')
-@Controller('floor-plans-dxf')
+@Controller({ version: '1', path: 'floor-plans-dxf' })
 export class FloorPlanDxfController {
   constructor(private readonly dxfConversionService: DxfConversionService) {}
 

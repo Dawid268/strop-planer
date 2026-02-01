@@ -31,7 +31,7 @@ interface RequestWithUser extends ExpressRequest {
 }
 
 @ApiTags('Auth')
-@Controller('auth')
+@Controller({ version: '1', path: 'auth' })
 export class AuthController {
   public constructor(private readonly authService: AuthService) {}
 

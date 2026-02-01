@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.entity';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { SlabType } from '../slab/enums/slab.enums';
+import { PROJECT_STATUS, PAGINATION } from '@common/constants';
 
 @Injectable()
 export class ProjectsService {
@@ -21,8 +23,8 @@ export class ProjectsService {
 
   public async findAllPaginated(
     userId: string,
-    page: number = 1,
-    limit: number = 20,
+    page: number = PAGINATION.DEFAULT_PAGE,
+    limit: number = PAGINATION.DEFAULT_LIMIT,
   ): Promise<{ data: FormworkProjectEntity[]; total: number }> {
     const [data, total] = await this.projectsRepository.findAndCount({
       where: { userId },
@@ -59,8 +61,8 @@ export class ProjectsService {
       floorHeight: dto.floorHeight,
       formworkSystem: dto.formworkSystem,
       userId,
-      status: 'draft',
-      slabType: (dto.slabType as SlabType) || SlabType.MONOLITHIC,
+      status: PROJECT_STATUS.DRAFT,
+      slabType: dto.slabType ?? SlabType.MONOLITHIC,
     });
     return this.projectsRepository.save(project);
   }
@@ -97,7 +99,7 @@ export class ProjectsService {
   ): Promise<FormworkProjectEntity> {
     const project = await this.findOne(id, userId);
     project.calculationResult = result;
-    project.status = 'calculated';
+    project.status = PROJECT_STATUS.CALCULATED;
     return this.projectsRepository.save(project);
   }
 
@@ -108,7 +110,7 @@ export class ProjectsService {
   ): Promise<FormworkProjectEntity> {
     const project = await this.findOne(id, userId);
     project.optimizationResult = result;
-    project.status = 'optimized';
+    project.status = PROJECT_STATUS.OPTIMIZED;
     return this.projectsRepository.save(project);
   }
 
@@ -121,8 +123,11 @@ export class ProjectsService {
     const projects = await this.projectsRepository.find({ where: { userId } });
     return {
       totalProjects: projects.length,
-      draftCount: projects.filter((p) => p.status === 'draft').length,
-      completedCount: projects.filter((p) => p.status === 'completed').length,
+      draftCount: projects.filter((p) => p.status === PROJECT_STATUS.DRAFT)
+        .length,
+      completedCount: projects.filter(
+        (p) => p.status === PROJECT_STATUS.COMPLETED,
+      ).length,
       totalArea: projects.reduce(
         (sum, p) => sum + p.slabLength * p.slabWidth,
         0,

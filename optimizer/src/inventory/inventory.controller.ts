@@ -34,7 +34,7 @@ import {
 @ApiTags('Inventory')
 @ApiBearerAuth()
 @UseGuards(AtGuard)
-@Controller('inventory')
+@Controller({ version: '1', path: 'inventory' })
 export class InventoryController {
   public constructor(private readonly inventoryService: InventoryService) {}
 
