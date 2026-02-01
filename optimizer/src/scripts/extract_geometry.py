@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Geometry Extraction Script v2.0
+Geometry Extraction Script v2.1
 Extracts closed polygons from SVG files for formwork calculation.
 
 Features:
@@ -9,6 +9,7 @@ Features:
 - Area calculation using Shoelace formula
 - Hole detection (clockwise orientation)
 - CAD element filtering (dimensions, axes)
+- Scale detection from text/metadata
 """
 
 import sys
@@ -550,6 +551,102 @@ def join_segments_to_polygons(segments: List[Segment], tolerance: float = TOLERA
     return polygons
 
 
+def extract_text_content(node, texts: List[str]) -> None:
+    """Extract all text content from SVG text elements."""
+    if not hasattr(node, 'tagName'):
+        return
+    
+    tag = node.tagName.lower() if hasattr(node, 'tagName') else ""
+    
+    if tag in ['text', 'tspan']:
+        for child in node.childNodes:
+            if child.nodeType == md.Node.TEXT_NODE:
+                text = child.data.strip()
+                if text:
+                    texts.append(text)
+    
+    for child in node.childNodes:
+        if child.nodeType == md.Node.ELEMENT_NODE:
+            extract_text_content(child, texts)
+
+
+def detect_scale(svg, texts: List[str]) -> Dict[str, Any]:
+    """
+    Detect drawing scale from SVG content.
+    
+    Searches for:
+    1. Scale text patterns: "1:100", "M 1:50", "Skala 1:100"
+    2. Metadata in SVG
+    3. Common architectural scale values
+    
+    Returns dict with:
+    - scale: numeric scale factor (e.g., 100 for 1:100)
+    - source: where the scale was detected from
+    - confidence: 0-100 confidence level
+    """
+    result = {
+        "scale": 100,  # Default 1:100
+        "source": "default",
+        "confidence": 20,
+        "units": "cm"  # Assume centimeters
+    }
+    
+    # Pattern 1: Look for scale text "1:XX" or "M 1:XX"
+    scale_patterns = [
+        r'[Mm]?\s*1\s*:\s*(\d+)',           # "1:100", "M 1:100"
+        r'[Ss]kala\s*1\s*:\s*(\d+)',        # "Skala 1:100"
+        r'[Ss]cale\s*1\s*:\s*(\d+)',        # "Scale 1:100"
+        r'SKALA\s*1\s*:\s*(\d+)',           # "SKALA 1:100"
+    ]
+    
+    for text in texts:
+        for pattern in scale_patterns:
+            match = re.search(pattern, text)
+            if match:
+                scale_value = int(match.group(1))
+                # Validate common architectural scales
+                if scale_value in [10, 20, 25, 50, 100, 200, 250, 500, 1000]:
+                    result["scale"] = scale_value
+                    result["source"] = "text"
+                    result["confidence"] = 90
+                    return result
+    
+    # Pattern 2: Look in SVG metadata
+    for desc_tag in ['desc', 'title', 'metadata']:
+        elements = svg.getElementsByTagName(desc_tag)
+        for elem in elements:
+            text = elem.textContent if hasattr(elem, 'textContent') else ''
+            for pattern in scale_patterns:
+                match = re.search(pattern, text)
+                if match:
+                    scale_value = int(match.group(1))
+                    result["scale"] = scale_value
+                    result["source"] = "metadata"
+                    result["confidence"] = 85
+                    return result
+    
+    # Pattern 3: Detect from dimension text (e.g., "500" near a line)
+    dimension_pattern = r'^(\d{3,5})$'  # 3-5 digit numbers (likely dimensions in mm/cm)
+    dimension_values = []
+    for text in texts:
+        match = re.match(dimension_pattern, text.strip())
+        if match:
+            dimension_values.append(int(match.group(1)))
+    
+    if dimension_values:
+        # If we have dimension values, estimate scale
+        max_dim = max(dimension_values)
+        if max_dim > 10000:  # Likely millimeters
+            result["units"] = "mm"
+            result["confidence"] = 50
+        elif max_dim > 100:  # Likely centimeters
+            result["units"] = "cm"
+            result["confidence"] = 50
+        result["source"] = "dimension_analysis"
+    
+    return result
+
+
 def extract_geometry(file_path: str) -> None:
     """Main extraction function."""
     try:
@@ -573,6 +670,13 @@ def extract_geometry(file_path: str) -> None:
         else:
             vbx, vby, vbw, vbh = 0, 0, vw, vh
         
+        # Extract text content for scale detection
+        text_content: List[str] = []
+        extract_text_content(svg, text_content)
+        
+        # Detect scale
+        scale_info = detect_scale(svg, text_content)
+        
         # Extract segments
         all_segments: List[Segment] = []
         process_element(svg, [1, 0, 0, 1, -vbx, -vby], all_segments)
@@ -584,11 +688,19 @@ def extract_geometry(file_path: str) -> None:
         boundaries = [p for p in polygons if not p['is_hole']]
         holes = [p for p in polygons if p['is_hole']]
         
+        # Apply scale to calculate real-world dimensions
+        scale_factor = scale_info["scale"]
+        for poly in boundaries + holes:
+            # Convert from drawing units to real units
+            poly["real_area_m2"] = poly["area"] * (scale_factor ** 2) / 10000  # cm² to m²
+            poly["real_perimeter_m"] = poly["perimeter"] * scale_factor / 100  # cm to m
+        
         # Output result
         result = {
             "polygons": boundaries,
             "holes": holes,
             "segments": all_segments,  # Keep raw segments for debugging
+            "scale": scale_info,
             "metadata": {
                 "width": vw,
                 "height": vh,
@@ -596,7 +708,8 @@ def extract_geometry(file_path: str) -> None:
                 "segmentCount": len(all_segments),
                 "polygonCount": len(boundaries),
                 "holeCount": len(holes),
-                "version": "2.0"
+                "textElementsFound": len(text_content),
+                "version": "2.1"
             }
         }
         
@@ -607,7 +720,7 @@ def extract_geometry(file_path: str) -> None:
         print(json.dumps({
             "error": str(e), 
             "trace": traceback.format_exc(),
-            "version": "2.0"
+            "version": "2.1"
         }))
 
 
@@ -615,4 +728,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         extract_geometry(sys.argv[1])
     else:
-        print(json.dumps({"error": "No input file provided", "version": "2.0"}))
+        print(json.dumps({"error": "No input file provided", "version": "2.1"}))
