@@ -5,14 +5,21 @@ import { of, lastValueFrom } from 'rxjs';
 
 describe('TransformInterceptor', () => {
   let interceptor: TransformInterceptor<unknown>;
+  let mockContext: ExecutionContext;
 
   beforeEach(() => {
     interceptor = new TransformInterceptor();
+    mockContext = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: { 'x-correlation-id': 'test-correlation-id' },
+        }),
+      }),
+    } as unknown as ExecutionContext;
   });
 
   it('should wrap response in standard format', async () => {
     const mockData = { id: 1, name: 'Test' };
-    const mockContext = {} as ExecutionContext;
     const mockCallHandler: CallHandler = {
       handle: () => of(mockData),
     };
@@ -25,12 +32,12 @@ describe('TransformInterceptor', () => {
       success: true,
       data: mockData,
       timestamp: expect.any(String),
+      correlationId: 'test-correlation-id',
     });
   });
 
   it('should handle array responses', async () => {
     const mockData = [{ id: 1 }, { id: 2 }];
-    const mockContext = {} as ExecutionContext;
     const mockCallHandler: CallHandler = {
       handle: () => of(mockData),
     };
@@ -41,10 +48,10 @@ describe('TransformInterceptor', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual(mockData);
+    expect(result.correlationId).toBe('test-correlation-id');
   });
 
   it('should handle null response', async () => {
-    const mockContext = {} as ExecutionContext;
     const mockCallHandler: CallHandler = {
       handle: () => of(null),
     };
@@ -55,10 +62,10 @@ describe('TransformInterceptor', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toBeNull();
+    expect(result.correlationId).toBe('test-correlation-id');
   });
 
-  it('should include ISO timestamp', async () => {
-    const mockContext = {} as ExecutionContext;
+  it('should include ISO timestamp and correlationId', async () => {
     const mockCallHandler: CallHandler = {
       handle: () => of({}),
     };
@@ -68,5 +75,6 @@ describe('TransformInterceptor', () => {
     );
 
     expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    expect(result.correlationId).toBe('test-correlation-id');
   });
 });
