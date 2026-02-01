@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 import { Injectable, Logger } from '@nestjs/common';
+
 import {
   FormworkLayout,
   FormworkElement,
@@ -13,6 +14,15 @@ import {
 import { SlabData } from '../slab/interfaces/slab.interface';
 import { InventoryService } from '../inventory/inventory.service';
 import { InventoryItemEntity } from '../inventory/entities/inventory-item.entity';
+import {
+  FORMWORK_SYSTEMS,
+  PROP_CONFIG,
+  BEAM_CONFIG,
+  AUXILIARY_CONFIG,
+  COST_CONFIG,
+  OPTIMIZATION_THRESHOLDS,
+  ALTERNATIVE_SYSTEMS,
+} from '@common/constants';
 
 @Injectable()
 export class FormworkService {
@@ -27,7 +37,7 @@ export class FormworkService {
     slabData: SlabData & { points?: Array<{ x: number; y: number }> },
     params: FormworkCalculationParams,
   ): Promise<FormworkLayout> {
-    const system = params.preferredSystem || 'PERI_SKYDECK';
+    const system = params.preferredSystem ?? FORMWORK_SYSTEMS.PERI_SKYDECK;
 
     // Pobierz elementy z magazynu
     const inventoryItems = await this.inventoryService.findAll({
@@ -134,11 +144,9 @@ export class FormworkService {
   }
 
   private mapInventoryToProp(item: InventoryItemEntity): FormworkProp {
-    // Parsowanie zakresu wysokości z nazwy lub użycie custom fields jeśli by były
-    // Tutaj prosta heurystyka
     return {
-      type: 'eurostempel',
-      minHeight: 200,
+      type: PROP_CONFIG.TYPE,
+      minHeight: PROP_CONFIG.MIN_HEIGHT,
       maxHeight: item.dimensionHeight || 350,
       loadCapacity: item.loadCapacity!,
       weight: item.weight,
@@ -147,10 +155,10 @@ export class FormworkService {
 
   private mapInventoryToBeam(item: InventoryItemEntity): FormworkBeam {
     return {
-      type: 'H20',
+      type: BEAM_CONFIG.TYPE,
       length: item.dimensionLength || 240,
-      supportSpacing: 150,
-      bendingCapacity: 6.0,
+      supportSpacing: BEAM_CONFIG.SUPPORT_SPACING,
+      bendingCapacity: BEAM_CONFIG.BENDING_CAPACITY,
     };
   }
 
@@ -234,7 +242,8 @@ export class FormworkService {
         placedRects.push({ x, y, w: panelW, h: panelH });
         inventoryCounts.set(primaryPanel.id, currentStock - 1);
         totalWeight += primaryPanel.weight;
-        totalCost += (primaryPanel.dailyRentCost || 0) * 30;
+        totalCost +=
+          (primaryPanel.dailyRentCost || 0) * COST_CONFIG.DEFAULT_RENTAL_DAYS;
       }
     }
 
@@ -320,7 +329,10 @@ export class FormworkService {
 
         remainingArea -= count * panelAreaM2;
         totalWeight += count * panel.weight;
-        totalCost += count * (panel.dailyRentCost || 2) * 30; // koszt miesięczny
+        totalCost +=
+          count *
+          (panel.dailyRentCost || COST_CONFIG.DEFAULT_DAILY_RENT_COST) *
+          COST_CONFIG.DEFAULT_RENTAL_DAYS;
       }
     }
 
@@ -341,7 +353,10 @@ export class FormworkService {
         });
       }
       totalWeight += additionalCount * smallestPanel.weight;
-      totalCost += additionalCount * (smallestPanel.dailyRentCost || 2) * 30;
+      totalCost +=
+        additionalCount *
+        (smallestPanel.dailyRentCost || COST_CONFIG.DEFAULT_DAILY_RENT_COST) *
+        COST_CONFIG.DEFAULT_RENTAL_DAYS;
     }
 
     return { elements, totalWeight, totalCost };
@@ -378,8 +393,8 @@ export class FormworkService {
       availableProps[0] ||
       defaultProp;
 
-    // Standardowy rozstaw podpór: 1.0-1.5m w obu kierunkach
-    const propSpacing = 1.2; // m
+    // Standardowy rozstaw podpór
+    const propSpacing = PROP_CONFIG.DEFAULT_SPACING;
     const propsPerM2 = 1 / (propSpacing * propSpacing);
     const propCount = Math.ceil(area * propsPerM2);
 
@@ -392,16 +407,16 @@ export class FormworkService {
 
     totalWeight = propCount * suitableProp.weight;
 
-    // Dodaj trójnogi dla stabilizacji (co 4 stojaki)
-    const tripodCount = Math.ceil(propCount / 4);
+    // Dodaj trójnogi dla stabilizacji
+    const tripodCount = Math.ceil(propCount / PROP_CONFIG.TRIPOD_PROPS_COUNT);
     elements.push({
       elementType: 'tripod',
       name: 'Trójnóg stabilizujący',
       quantity: tripodCount,
-      details: { weight: 5 },
+      details: { weight: PROP_CONFIG.TRIPOD_WEIGHT },
     });
 
-    totalWeight += tripodCount * 5;
+    totalWeight += tripodCount * PROP_CONFIG.TRIPOD_WEIGHT;
 
     return { elements, totalWeight };
   }
@@ -419,15 +434,15 @@ export class FormworkService {
 
     // Default beam when inventory is empty
     const defaultBeam: FormworkBeam = {
-      type: 'H20',
+      type: BEAM_CONFIG.TYPE,
       length: 240,
-      supportSpacing: 150,
-      bendingCapacity: 6.0,
+      supportSpacing: BEAM_CONFIG.SUPPORT_SPACING,
+      bendingCapacity: BEAM_CONFIG.BENDING_CAPACITY,
     };
 
     // Dźwigary główne (wzdłuż krótszego wymiaru)
     const primaryBeam = availableBeams[0] || defaultBeam;
-    const primarySpacing = 0.5; // m
+    const primarySpacing = BEAM_CONFIG.PRIMARY_SPACING;
     const primaryCount = Math.ceil(length / primarySpacing);
 
     elements.push({
@@ -437,10 +452,11 @@ export class FormworkService {
       details: primaryBeam,
     });
 
-    totalWeight += primaryCount * (primaryBeam.length / 100) * 3.5; // ~3.5 kg/m dla H20
+    totalWeight +=
+      primaryCount * (primaryBeam.length / 100) * BEAM_CONFIG.WEIGHT_PER_METER;
 
     // Dźwigary pomocnicze (prostopadle)
-    const secondarySpacing = 0.75; // m
+    const secondarySpacing = BEAM_CONFIG.SECONDARY_SPACING;
     const secondaryCount = Math.ceil(width / secondarySpacing);
 
     elements.push({
@@ -450,7 +466,10 @@ export class FormworkService {
       details: primaryBeam,
     });
 
-    totalWeight += secondaryCount * (primaryBeam.length / 100) * 3.5;
+    totalWeight +=
+      secondaryCount *
+      (primaryBeam.length / 100) *
+      BEAM_CONFIG.WEIGHT_PER_METER;
 
     return { elements, totalWeight };
   }
@@ -470,7 +489,7 @@ export class FormworkService {
         elementType: 'drophead',
         name: 'Głowica opadająca',
         quantity: propElement.quantity,
-        details: { weight: 2.5 },
+        details: { weight: AUXILIARY_CONFIG.DROPHEAD_WEIGHT },
       });
 
       // Głowice krzyżowe (dla dźwigarów)
@@ -478,7 +497,7 @@ export class FormworkService {
         elementType: 'head',
         name: 'Głowica krzyżowa',
         quantity: Math.ceil(propElement.quantity / 2),
-        details: { weight: 1.8 },
+        details: { weight: AUXILIARY_CONFIG.HEAD_WEIGHT },
       });
     }
 
@@ -489,8 +508,10 @@ export class FormworkService {
    * Szacuje czas montażu
    */
   private estimateAssemblyTime(area: number, elementCount: number): number {
-    // Średni czas: 0.3 roboczogodziny na m² + 0.05 na element
-    return area * 0.3 + elementCount * 0.05;
+    return (
+      area * COST_CONFIG.LABOR_HOURS_PER_SQM +
+      elementCount * COST_CONFIG.LABOR_HOURS_PER_ELEMENT
+    );
   }
 
   /**
@@ -538,7 +559,7 @@ export class FormworkService {
         newCost +=
           element.quantity *
           ((element.details as FormworkPanel).dailyRentCost || 0) *
-          30;
+          COST_CONFIG.DEFAULT_RENTAL_DAYS;
       }
     }
 
@@ -589,7 +610,7 @@ export class FormworkService {
         return panel.area < 0.75 ? sum + e.quantity : sum;
       }, 0);
 
-    if (smallPanelCount > 10) {
+    if (smallPanelCount > OPTIMIZATION_THRESHOLDS.SMALL_PANEL_COUNT) {
       recommendations.push(
         `Rozważ zastąpienie ${smallPanelCount} małych paneli większymi formatami dla szybszego montażu`,
       );
@@ -599,9 +620,9 @@ export class FormworkService {
     const propElement = original.elements.find((e) => e.elementType === 'prop');
     if (propElement) {
       const propDensity = propElement.quantity / original.slabArea;
-      if (propDensity > 1.2) {
+      if (propDensity > OPTIMIZATION_THRESHOLDS.HIGH_PROP_DENSITY) {
         recommendations.push(
-          'Gęstość podpór powyżej 1.2/m² - sprawdź możliwość zwiększenia rozstawu',
+          `Gęstość podpór powyżej ${OPTIMIZATION_THRESHOLDS.HIGH_PROP_DENSITY}/m² - sprawdź możliwość zwiększenia rozstawu`,
         );
       }
     }
@@ -629,13 +650,7 @@ export class FormworkService {
   ): Promise<FormworkLayout[]> {
     const alternatives: FormworkLayout[] = [];
 
-    // Alternatywa z innym systemem
-    const alternativeSystems: FormworkSystemType[] = [
-      'DOKA_DOKAFLEX',
-      'ULMA_ENKOFLEX',
-    ];
-
-    for (const altSystem of alternativeSystems) {
+    for (const altSystem of ALTERNATIVE_SYSTEMS) {
       if (altSystem !== original.system) {
         const altLayout = await this.recalculateWithSystem(original, altSystem);
         if (altLayout) {

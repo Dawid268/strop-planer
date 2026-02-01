@@ -316,11 +316,12 @@ describe('ProjectsService', () => {
 
       await service.findAllPaginated(mockUserId);
 
+      // Default pagination: page=1, limit=10 (from PAGINATION constants)
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { userId: mockUserId },
         order: { updatedAt: 'DESC' },
         skip: 0,
-        take: 20,
+        take: 10,
       });
     });
   });
