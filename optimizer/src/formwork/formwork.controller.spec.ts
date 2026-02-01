@@ -4,6 +4,15 @@ import { FormworkController } from './formwork.controller';
 import { FormworkService } from './formwork.service';
 
 /**
+ * Test-specific interface for incomplete CalculateRequest payloads.
+ * Used to test validation error handling when required fields are missing.
+ */
+interface PartialCalculateRequest {
+  slabData?: unknown;
+  params?: unknown;
+}
+
+/**
  * Black-box tests for FormworkController
  * Testing based on endpoint signatures and expected HTTP behavior only
  */
@@ -86,18 +95,22 @@ describe('FormworkController', () => {
     });
 
     it('should throw BAD_REQUEST when slabData is missing', async () => {
+      const incompleteRequest: PartialCalculateRequest = {
+        params: validRequest.params,
+      };
+
       await expect(
-        controller.calculateFormwork({
-          params: validRequest.params,
-        } as unknown as CalculateRequestDto),
+        controller.calculateFormwork(incompleteRequest as never),
       ).rejects.toThrow(HttpException);
     });
 
     it('should throw BAD_REQUEST when params is missing', async () => {
+      const incompleteRequest: PartialCalculateRequest = {
+        slabData: validRequest.slabData,
+      };
+
       await expect(
-        controller.calculateFormwork({
-          slabData: validRequest.slabData,
-        } as unknown as CalculateRequestDto),
+        controller.calculateFormwork(incompleteRequest as never),
       ).rejects.toThrow(HttpException);
     });
 
