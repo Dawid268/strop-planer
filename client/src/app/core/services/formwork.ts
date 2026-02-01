@@ -1,18 +1,18 @@
-import { Injectable, inject } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { Observable } from "rxjs";
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import type {
   FormworkLayoutDto,
   FormworkSystemDto,
   CalculateFormworkRequestDto,
   OptimizationResultDto,
-} from "../../shared/dto";
-import { environment } from "../../../environments/environment";
+} from '../../shared/dto';
+import { environment } from '../../../environments/environment';
 
 const API_BASE = `${environment.apiUrl}/formwork`;
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root',
 })
 export class FormworkService {
   private readonly http = inject(HttpClient);
@@ -24,7 +24,7 @@ export class FormworkService {
     systems: ReadonlyArray<FormworkSystemDto>;
   }> {
     return this.http.get<{ systems: ReadonlyArray<FormworkSystemDto> }>(
-      `${API_BASE}/systems`
+      `${API_BASE}/systems`,
     );
   }
 
@@ -32,7 +32,7 @@ export class FormworkService {
    * Oblicza układ szalunku dla stropu
    */
   public calculate(
-    request: CalculateFormworkRequestDto
+    request: CalculateFormworkRequestDto,
   ): Observable<FormworkLayoutDto> {
     return this.http.post<FormworkLayoutDto>(`${API_BASE}/calculate`, request);
   }
@@ -43,7 +43,7 @@ export class FormworkService {
   public optimize(layoutId: string): Observable<OptimizationResultDto> {
     return this.http.post<OptimizationResultDto>(
       `${API_BASE}/optimize/${layoutId}`,
-      {}
+      {},
     );
   }
 

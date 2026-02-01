@@ -1,7 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable, timer } from "rxjs";
-import { switchMap, takeWhile, tap } from "rxjs/operators";
+import { switchMap, takeWhile, tap, map } from "rxjs/operators";
 import { ProjectsStore } from "../store/projects.store";
 import type {
   Project,
@@ -11,6 +11,7 @@ import type {
 } from "../models/project.model";
 import { ProjectsApiService } from "./projects-api.service";
 import { environment } from "../../../../environments/environment";
+import { ApiResponse } from "@core/models/api-response.model";
 
 @Injectable({
   providedIn: "root",
@@ -46,30 +47,30 @@ export class ProjectsService {
   }
 
   public extractGeometry(pdfPath: string, projectId: string): Observable<Job> {
-    console.log("DEBUG: extractGeometry called DEFINED", {
-      pdfPath,
-      projectId,
-    });
+    console.log("DEBUG: extractGeometry called", { pdfPath, projectId });
     return this.http
-      .post<{ jobId: string }>(`${environment.apiUrl}/geometry/extract`, {
-        pdfPath,
-        projectId,
-      })
+      .post<ApiResponse<{ jobId: string }>>(
+        `${environment.apiUrl}/geometry/extract`,
+        {
+          pdfPath,
+          projectId,
+        },
+      )
       .pipe(
-        switchMap((res) => {
-          const jobId = res.jobId;
+        switchMap((res: ApiResponse<{ jobId: string }>) => {
+          const jobId = res.data.jobId;
           console.log(`DEBUG: Extraction job started with ID: ${jobId}`);
 
           return timer(0, 2000).pipe(
             tap(() => console.log(`DEBUG: Polling job status for ${jobId}...`)),
             switchMap(() =>
               this.http
-                .get<Job>(`${environment.apiUrl}/geometry/jobs/${jobId}`)
-                .pipe(
-                  tap((job) => console.log(`DEBUG: Job status received:`, job)),
-                ),
+                .get<
+                  ApiResponse<Job>
+                >(`${environment.apiUrl}/geometry/jobs/${jobId}`)
+                .pipe(map((jobRes: ApiResponse<Job>) => jobRes.data)),
             ),
-            takeWhile((job) => {
+            takeWhile((job: Job) => {
               const isProcessing =
                 job.status === "pending" || job.status === "processing";
               if (!isProcessing) {
@@ -85,12 +86,28 @@ export class ProjectsService {
       );
   }
 
-  uploadPdf(projectId: string, file: File): Observable<any> {
+  uploadPdf(projectId: string, file: File): Observable<ApiResponse<any>> {
     const formData = new FormData();
     formData.append("file", file);
-    return this.http.post(
+    return this.http.post<ApiResponse<any>>(
       `${environment.apiUrl}/pdf/upload/${projectId}`,
       formData,
+    );
+  }
+
+  public getEditorData(projectId: string): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(
+      `${environment.apiUrl}/projects/${projectId}/editor-data`,
+    );
+  }
+
+  public updateEditorData(
+    projectId: string,
+    data: any,
+  ): Observable<ApiResponse<any>> {
+    return this.http.put<ApiResponse<any>>(
+      `${environment.apiUrl}/projects/${projectId}/editor-data`,
+      data,
     );
   }
 }

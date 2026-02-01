@@ -33,6 +33,7 @@
     "@nestjs/platform-express": "^11.1.11",
     "@nestjs/serve-static": "^5.0.4",
     "@nestjs/swagger": "^11.2.4",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
     "@types/bcrypt": "^6.0.0",
     "@types/passport-jwt": "^4.0.1",
@@ -42,6 +43,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "dxf-parser": "^1.1.2",
+    "helmet": "^8.1.0",
     "joi": "^18.0.2",
     "multer": "^2.0.2",
     "nest-winston": "^1.10.2",
@@ -100,6 +102,19 @@
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      ".module.ts$",
+      ".interface.ts$",
+      ".profile.ts$",
+      ".entity.ts$",
+      ".dto.ts$",
+      ".enums.ts$",
+      "src/rentals/",
+      "src/slab/",
+      "src/customers/",
+      "main.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

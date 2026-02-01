@@ -3,10 +3,81 @@
 >
   <p-accordion
     [multiple]="true"
-    [value]="['layers', 'properties', 'catalog']"
+    [value]="['tabs', 'layers', 'properties', 'catalog']"
     expandIcon="pi pi-chevron-down"
     collapseIcon="pi pi-chevron-up"
   >
+    <!-- Tabs (Pages) Panel -->
+    <p-accordion-panel value="tabs">
+      <p-accordion-header>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-file"></i>
+          <span class="font-medium">Strony</span>
+          <span class="text-xs text-500">({{ store.tabs().length }})</span>
+        </div>
+      </p-accordion-header>
+      <p-accordion-content>
+        <div class="flex gap-2 mb-3">
+          <p-button
+            icon="pi pi-plus"
+            label="Nowa strona"
+            [text]="true"
+            [outlined]="true"
+            size="small"
+            (click)="openNewTabDialog()"
+          ></p-button>
+        </div>
+
+        <div class="flex flex-column gap-1">
+          @for (tab of store.tabs(); track tab.id) {
+            <div
+              class="tab-item flex align-items-center justify-content-between p-2 hover:bg-50 border-round transition-colors transition-duration-150 cursor-pointer"
+              [class.bg-primary-50]="store.activeTabId() === tab.id"
+              [class.border-primary-200]="store.activeTabId() === tab.id"
+              [class.border-1]="store.activeTabId() === tab.id"
+              (click)="store.setActiveTab(tab.id)"
+            >
+              <div class="flex align-items-center gap-2">
+                <i class="pi pi-file text-500"></i>
+                @if (editingTabId() === tab.id) {
+                  <input
+                    pInputText
+                    [ngModel]="newTabName()"
+                    (ngModelChange)="newTabName.set($event)"
+                    (blur)="saveTabName(tab.id)"
+                    (keyup.enter)="saveTabName(tab.id)"
+                    class="p-inputtext-sm w-6rem"
+                    (click)="$event.stopPropagation()"
+                  />
+                } @else {
+                  <span
+                    class="text-sm font-medium"
+                    (dblclick)="startEditingTabName(tab.id); $event.stopPropagation()"
+                  >{{ tab.name }}</span>
+                }
+                <span class="text-xs text-400">
+                  ({{ tab.layers.length }} warstw)
+                </span>
+              </div>
+              <div class="flex align-items-center gap-1" (click)="$event.stopPropagation()">
+                @if (store.tabs().length > 1) {
+                  <p-button
+                    icon="pi pi-trash"
+                    [text]="true"
+                    severity="danger"
+                    [rounded]="true"
+                    size="small"
+                    (click)="store.removeTab(tab.id)"
+                    pTooltip="Usuń stronę"
+                  ></p-button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </p-accordion-content>
+    </p-accordion-panel>
+
     <!-- Layers Panel -->
     <p-accordion-panel value="layers">
       <p-accordion-header>
@@ -15,172 +86,165 @@
           <span class="font-medium">{{
             "editor.sidebar.layers" | transloco
           }}</span>
+          <span class="text-xs text-500">({{ store.activeLayers().length }})</span>
         </div>
       </p-accordion-header>
       <p-accordion-content>
-        <!-- Layer Action Buttons -->
-        <div class="flex gap-2 mb-3">
-          <p-button
-            icon="pi pi-plus"
-            label="Nowa warstwa"
-            [text]="true"
-            [outlined]="true"
-            size="small"
-            (click)="openNewLayerDialog()"
-          ></p-button>
-        </div>
+        @if (!store.activeTabId()) {
+          <p class="text-sm text-600 text-center py-4 italic">
+            Wybierz stronę, aby zobaczyć warstwy
+          </p>
+        } @else {
+          <div class="flex gap-2 mb-3">
+            <p-button
+              icon="pi pi-plus"
+              label="Nowa warstwa"
+              [text]="true"
+              [outlined]="true"
+              size="small"
+              (click)="openNewLayerDialog()"
+            ></p-button>
+          </div>
 
-        <!-- Layers List -->
-        <div class="flex flex-column gap-1">
-          @for (layer of store.layers(); track layer.id) {
-            <div
-              class="layer-item flex flex-column p-2 hover:bg-50 border-round transition-colors transition-duration-150 cursor-pointer"
-              [class.bg-blue-50]="store.activeLayerId() === layer.id"
-              [class.border-blue-200]="store.activeLayerId() === layer.id"
-              [class.border-1]="store.activeLayerId() === layer.id"
-              (click)="store.setActiveLayer(layer.id)"
-            >
-              <div class="flex align-items-center justify-content-between mb-2">
-                <div class="flex align-items-center gap-2">
-                  <!-- Layer color badge -->
-                  @if (layer.color) {
-                    <span
-                      class="layer-color-badge"
-                      [style.background-color]="layer.color"
-                      style="
-                        width: 12px;
-                        height: 12px;
-                        border-radius: 2px;
-                        display: inline-block;
-                      "
-                    ></span>
-                  } @else {
-                    <i [class]="'pi ' + getLayerIcon(layer) + ' text-600'"></i>
-                  }
+          <div class="flex flex-column gap-1">
+            @for (layer of store.activeLayers(); track layer.id) {
+              <div
+                class="layer-item flex flex-column p-2 hover:bg-50 border-round transition-colors transition-duration-150 cursor-pointer"
+                [class.bg-blue-50]="store.activeLayerId() === layer.id"
+                [class.border-blue-200]="store.activeLayerId() === layer.id"
+                [class.border-1]="store.activeLayerId() === layer.id"
+                (click)="store.setActiveLayer(layer.id)"
+              >
+                <div class="flex align-items-center justify-content-between mb-2">
+                  <div class="flex align-items-center gap-2">
+                    @if (layer.color) {
+                      <span
+                        class="layer-color-badge"
+                        [style.background-color]="layer.color"
+                        style="
+                          width: 12px;
+                          height: 12px;
+                          border-radius: 2px;
+                          display: inline-block;
+                        "
+                      ></span>
+                    } @else {
+                      <i [class]="'pi ' + getLayerIcon(layer) + ' text-600'"></i>
+                    }
 
-                  <!-- Inline editing for user layers -->
-                  @if (editingLayerId() === layer.id) {
-                    <input
-                      pInputText
-                      [ngModel]="newLayerName()"
-                      (ngModelChange)="newLayerName.set($event)"
-                      (blur)="saveLayerName(layer.id)"
-                      (keyup.enter)="saveLayerName(layer.id)"
-                      class="p-inputtext-sm w-8rem"
-                      (click)="$event.stopPropagation()"
-                    />
-                  } @else {
-                    <span
-                      class="text-sm font-medium"
-                      (dblclick)="
-                        startEditingLayerName(layer.id);
-                        $event.stopPropagation()
-                      "
-                      >{{ layer.name }}</span
-                    >
-                  }
+                    @if (editingLayerId() === layer.id) {
+                      <input
+                        pInputText
+                        [ngModel]="newLayerName()"
+                        (ngModelChange)="newLayerName.set($event)"
+                        (blur)="saveLayerName(layer.id)"
+                        (keyup.enter)="saveLayerName(layer.id)"
+                        class="p-inputtext-sm w-8rem"
+                        (click)="$event.stopPropagation()"
+                      />
+                    } @else {
+                      <span
+                        class="text-sm font-medium"
+                        [class.cursor-text]="isLayerEditable(layer)"
+                        (dblclick)="isLayerEditable(layer) && startEditingLayerName(layer.id); $event.stopPropagation()"
+                      >{{ layer.name }}</span>
+                    }
 
-                  <!-- Category badge -->
-                  @if (layer.category === "user") {
+                    @let badge = getLayerTypeBadge(layer.type);
                     <span
-                      class="text-xs bg-green-100 text-green-700 px-2 py-1 border-round"
-                      >Własna</span
-                    >
-                  }
-                </div>
-                <div
-                  class="flex align-items-center gap-1"
-                  (click)="$event.stopPropagation()"
-                >
-                  <p-toggleswitch
-                    [ngModel]="layer.visible"
-                    (onChange)="store.toggleLayerVisibility(layer.id)"
-                    [pTooltip]="'editor.sidebar.visibility' | transloco"
-                    tooltipPosition="left"
-                  ></p-toggleswitch>
-                  <p-button
-                    [icon]="layer.locked ? 'pi pi-lock' : 'pi pi-lock-open'"
-                    [text]="true"
-                    [severity]="layer.locked ? 'danger' : 'secondary'"
-                    [rounded]="true"
-                    size="small"
-                    (click)="store.toggleLayerLock(layer.id)"
-                    [pTooltip]="
-                      (layer.locked
-                        ? 'editor.sidebar.unlock'
-                        : 'editor.sidebar.lock'
-                      ) | transloco
-                    "
-                  ></p-button>
-                  @if (layer.isRemovable) {
+                      class="text-xs px-2 py-1 border-round"
+                      [class]="badge.class"
+                    >{{ badge.label }}</span>
+
+                    <span class="text-xs text-400">
+                      ({{ layer.shapes.length }})
+                    </span>
+                  </div>
+                  <div
+                    class="flex align-items-center gap-1"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <p-toggleswitch
+                      [ngModel]="layer.isVisible"
+                      (onChange)="store.toggleLayerVisibility(layer.id)"
+                      [pTooltip]="'editor.sidebar.visibility' | transloco"
+                      tooltipPosition="left"
+                    ></p-toggleswitch>
                     <p-button
-                      icon="pi pi-trash"
+                      [icon]="layer.isLocked ? 'pi pi-lock' : 'pi pi-lock-open'"
                       [text]="true"
-                      severity="danger"
+                      [severity]="layer.isLocked ? 'danger' : 'secondary'"
                       [rounded]="true"
                       size="small"
-                      (click)="store.deleteLayer(layer.id)"
-                      pTooltip="Usuń warstwę"
+                      (click)="store.toggleLayerLock(layer.id)"
+                      [pTooltip]="layer.isLocked ? 'Odblokuj' : 'Zablokuj'"
+                    ></p-button>
+                    @if (isLayerRemovable(layer)) {
+                      <p-button
+                        icon="pi pi-trash"
+                        [text]="true"
+                        severity="danger"
+                        [rounded]="true"
+                        size="small"
+                        (click)="store.deleteLayer(layer.id)"
+                        pTooltip="Usuń warstwę"
+                      ></p-button>
+                    }
+                  </div>
+                </div>
+
+                <div
+                  class="flex align-items-center gap-2 px-2 pb-1"
+                  (click)="$event.stopPropagation()"
+                >
+                  <i class="pi pi-sun text-400 text-xs"></i>
+                  <p-slider
+                    [ngModel]="layer.opacity * 100"
+                    (ngModelChange)="store.setLayerOpacity(layer.id, $event / 100)"
+                    class="flex-grow-1"
+                    [min]="0"
+                    [max]="100"
+                  ></p-slider>
+                  <span class="text-xs text-500 font-mono w-2rem text-right">
+                    {{ layer.opacity * 100 | number: "1.0-0" }}%
+                  </span>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (store.selectedIds().length > 0) {
+            <div class="mt-3 pt-3 border-top-1 border-200">
+              <p class="text-xs text-500 mb-2">
+                Zaznaczono: {{ store.selectedIds().length }} elementów
+              </p>
+              <div class="flex flex-column gap-2">
+                <p-button
+                  icon="pi pi-save"
+                  label="Zapisz jako warstwa"
+                  [text]="true"
+                  [outlined]="true"
+                  size="small"
+                  severity="success"
+                  (click)="openNewLayerDialog()"
+                ></p-button>
+
+                <div class="flex flex-column gap-1">
+                  <span class="text-xs text-600">Przenieś do warstwy:</span>
+                  @for (layer of getEditableLayers(); track layer.id) {
+                    <p-button
+                      [label]="layer.name"
+                      [text]="true"
+                      size="small"
+                      [disabled]="store.activeLayerId() === layer.id"
+                      (click)="store.moveSelectionToLayer(layer.id)"
+                      class="text-left"
                     ></p-button>
                   }
                 </div>
               </div>
-
-              <div
-                class="flex align-items-center gap-2 px-2 pb-1"
-                (click)="$event.stopPropagation()"
-              >
-                <i class="pi pi-sun text-400 text-xs"></i>
-                <p-slider
-                  [ngModel]="layer.opacity * 100"
-                  (ngModelChange)="
-                    store.setLayerOpacity(layer.id, $event / 100)
-                  "
-                  class="flex-grow-1"
-                  [min]="0"
-                  [max]="100"
-                ></p-slider>
-                <span class="text-xs text-500 font-mono w-2rem text-right">
-                  {{ layer.opacity * 100 | number: "1.0-0" }}%
-                </span>
-              </div>
             </div>
           }
-        </div>
-
-        <!-- Selection Actions -->
-        @if (store.selectedIds().length > 0) {
-          <div class="mt-3 pt-3 border-top-1 border-200">
-            <p class="text-xs text-500 mb-2">
-              Zaznaczono: {{ store.selectedIds().length }} elementów
-            </p>
-            <div class="flex flex-column gap-2">
-              <p-button
-                icon="pi pi-save"
-                label="Zapisz jako warstwa"
-                [text]="true"
-                [outlined]="true"
-                size="small"
-                severity="success"
-                (click)="openNewLayerDialog()"
-              ></p-button>
-
-              <!-- Move to layer dropdown -->
-              <div class="flex flex-column gap-1">
-                <span class="text-xs text-600">Przenieś do warstwy:</span>
-                @for (layer of getEditableLayers(); track layer.id) {
-                  <p-button
-                    [label]="layer.name"
-                    [text]="true"
-                    size="small"
-                    [disabled]="store.activeLayerId() === layer.id"
-                    (click)="store.moveSelectionToLayer(layer.id)"
-                    class="text-left"
-                  ></p-button>
-                }
-              </div>
-            </div>
-          </div>
         }
       </p-accordion-content>
     </p-accordion-panel>
@@ -357,6 +421,44 @@
             [disabled]="!newLayerName()"
           ></p-button>
         }
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- New Tab Dialog -->
+  <p-dialog
+    header="Nowa strona"
+    [(visible)]="showNewTabDialog"
+    [modal]="true"
+    [style]="{ width: '350px' }"
+    [closable]="true"
+  >
+    <div class="flex flex-column gap-3">
+      <div class="flex flex-column gap-2">
+        <label for="tabName" class="text-sm font-medium">Nazwa strony</label>
+        <input
+          pInputText
+          id="tabName"
+          [ngModel]="newTabName()"
+          (ngModelChange)="newTabName.set($event)"
+          placeholder="np. Kondygnacja 1"
+          class="w-full"
+          (keyup.enter)="createNewTab()"
+        />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button
+          label="Anuluj"
+          [text]="true"
+          severity="secondary"
+          (click)="showNewTabDialog.set(false)"
+        ></p-button>
+        <p-button
+          label="Utwórz"
+          icon="pi pi-plus"
+          (click)="createNewTab()"
+          [disabled]="!newTabName()"
+        ></p-button>
       </div>
     </div>
   </p-dialog>

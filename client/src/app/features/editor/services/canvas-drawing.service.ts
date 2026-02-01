@@ -7,7 +7,6 @@ import {
   CanvasPoint,
 } from "../utils/canvas.utils";
 import { CanvasStateService } from "./canvas-state.service";
-import { MessageService } from "primeng/api";
 
 @Injectable()
 export class CanvasDrawingService {
@@ -77,7 +76,7 @@ export class CanvasDrawingService {
       x: beam.left || 0,
       y: beam.top || 0,
       rotation: beam.angle || 0,
-      layer: this.store.activeLayerId(),
+      layer: this.store.activeLayerId() ?? undefined,
     });
 
     this.isDrawingBeam = false;
@@ -192,7 +191,7 @@ export class CanvasDrawingService {
       x: polygon.left || 0,
       y: polygon.top || 0,
       points: [...this.polygonPoints],
-      layer: this.store.activeLayerId(),
+      layer: this.store.activeLayerId() ?? undefined,
     });
 
     this.polygonPoints = [];
@@ -277,7 +276,7 @@ export class CanvasDrawingService {
       width: panel.width,
       height: panel.height,
       rotation: panel.angle || 0,
-      layer: this.store.activeLayerId(),
+      layer: this.store.activeLayerId() ?? undefined,
       catalogCode: catalogItem?.code,
     });
     this.stateService.updateObjectCount(canvas);
@@ -307,7 +306,7 @@ export class CanvasDrawingService {
       x: prop.left || 0,
       y: prop.top || 0,
       rotation: prop.angle || 0,
-      layer: this.store.activeLayerId(),
+      layer: this.store.activeLayerId() ?? undefined,
     });
     this.stateService.updateObjectCount(canvas);
     canvas.requestRenderAll();

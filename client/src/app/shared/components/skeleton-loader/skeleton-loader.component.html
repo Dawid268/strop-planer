@@ -1,0 +1,9 @@
+@for (item of items; track $index) {
+  <p-skeleton
+    [shape]="type === 'circle' ? 'circle' : 'rectangle'"
+    [width]="width"
+    [height]="height"
+    [style.marginBottom]="marginBottom"
+    [borderRadius]="borderRadius"
+  ></p-skeleton>
+}

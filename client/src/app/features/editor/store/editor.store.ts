@@ -14,14 +14,10 @@ import {
 } from "@angular-architects/ngrx-toolkit";
 import { computed, inject } from "@angular/core";
 import type {
-  EditorState,
   Shape,
-  LayerState,
-  LayerType,
   EditorTool,
   Point,
   CatalogItem,
-  ToolType,
   ViewMode,
 } from "../models/editor.models";
 import { FormworkApiService } from "../../projects/services/formwork-api.service";
@@ -29,64 +25,79 @@ import { rxMethod } from "@ngrx/signals/rxjs-interop";
 import { pipe } from "rxjs";
 import { tap, switchMap, map, catchError } from "rxjs/operators";
 import { MessageService } from "primeng/api";
-import { Project } from "../../projects/models/project.model";
 import { ProjectsService } from "../../projects/services/projects.service";
+import {
+  EditorData,
+  EditorTab,
+  EditorLayer,
+} from "../../projects/models/project.model";
 
-const initialLayers: LayerState[] = [
-  {
-    id: "slab",
-    name: "Płyta stropowa",
-    category: "system",
-    visible: true,
-    locked: false,
+function createDefaultLayer(name: string, type: EditorLayer["type"] = "user"): EditorLayer {
+  return {
+    id: `layer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    name,
+    shapes: [],
+    isVisible: true,
+    isLocked: false,
     opacity: 1,
-    isEditable: false,
-    isRemovable: false,
-    color: "#9e9e9e",
-  },
-  {
-    id: "beams",
-    name: "Belki",
-    category: "system",
-    visible: true,
-    locked: false,
-    opacity: 1,
-    isEditable: false,
-    isRemovable: false,
-    color: "#ffeb3b",
-  },
-  {
-    id: "formwork",
-    name: "Szalunek",
-    category: "data",
-    visible: true,
-    locked: false,
-    opacity: 1,
-    isEditable: false,
-    isRemovable: false,
-    color: "#d32f2f",
-  },
-  {
-    id: "annotations",
-    name: "Adnotacje",
-    category: "system",
-    visible: true,
-    locked: false,
-    opacity: 0.8,
-    isEditable: false,
-    isRemovable: false,
-    color: "#1976d2",
-  },
-];
+    type,
+    color: generateLayerColor(),
+  };
+}
 
-const initialState: EditorState = {
-  shapes: [],
-  layers: initialLayers,
+function createDefaultTab(name: string): EditorTab {
+  return {
+    id: `tab-${Date.now()}`,
+    name,
+    active: true,
+    layers: [createDefaultLayer("Warstwa 1", "user")],
+  };
+}
+
+function generateLayerColor(): string {
+  const colors = [
+    "#e91e63",
+    "#9c27b0",
+    "#673ab7",
+    "#3f51b5",
+    "#2196f3",
+    "#00bcd4",
+    "#009688",
+    "#4caf50",
+    "#8bc34a",
+    "#ff9800",
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+export interface EditorExtendedState {
+  tabs: EditorTab[];
+  activeTabId: string | null;
+  activeLayerId: string | null;
+  selectedIds: string[];
+  zoom: number;
+  panX: number;
+  panY: number;
+  gridSize: number;
+  snapToGrid: boolean;
+  showGrid: boolean;
+  activeTool: EditorTool;
+  activeCatalogItem: CatalogItem | null;
+  backgroundUrl: string | null;
+  referenceGeometry: any | null;
+  viewMode: ViewMode;
+  projectId: string | null;
+}
+
+const initialState: EditorExtendedState = {
+  tabs: [],
+  activeTabId: null,
+  activeLayerId: null,
   selectedIds: [],
   zoom: 1,
   panX: 0,
   panY: 0,
-  gridSize: 100, // 100mm = 10cm
+  gridSize: 100,
   snapToGrid: true,
   showGrid: true,
   activeTool: "select",
@@ -95,7 +106,6 @@ const initialState: EditorState = {
   referenceGeometry: null,
   viewMode: "full",
   projectId: null,
-  activeLayerId: "slab",
 };
 
 export const EditorStore = signalStore(
@@ -104,33 +114,60 @@ export const EditorStore = signalStore(
   withDevtools("editorStore"),
   withCallState(),
   withComputed((state) => ({
-    selectedShapes: computed(() =>
-      state.shapes().filter((s) => state.selectedIds().includes(s.id)),
+    activeTab: computed(() =>
+      state.tabs().find((t) => t.id === state.activeTabId()),
     ),
-    visibleShapes: computed(() => {
-      const layers = state.layers();
-      const visibleLayerIds = layers.filter((l) => l.visible).map((l) => l.id);
-
-      return state
-        .shapes()
-        .filter((s) => s.layer && visibleLayerIds.includes(s.layer))
-        .map((s) => {
-          const layer = layers.find((l) => l.id === s.layer);
-          return {
-            ...s,
-            opacity: layer?.opacity ?? 1,
-            zIndex: layers.findIndex((l) => l.id === s.layer),
-          };
-        })
-        .sort((a, b) => a.zIndex - b.zIndex);
+    activeLayers: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      return tab?.layers ?? [];
     }),
-    isSlabDefined: computed(() =>
-      state.shapes().some((s) => s.type === "polygon" || s.type === "slab"),
-    ),
-    slabShapes: computed(() => state.shapes().filter((s) => s.type === "slab")),
-    panelShapes: computed(() =>
-      state.shapes().filter((s) => s.type === "panel"),
-    ),
+    activeLayer: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return null;
+      return tab.layers.find((l) => l.id === state.activeLayerId()) ?? tab.layers[0] ?? null;
+    }),
+    allShapes: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return [];
+      return tab.layers.flatMap((l) => l.shapes);
+    }),
+    selectedShapes: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return [];
+      const allShapes = tab.layers.flatMap((l) => l.shapes);
+      return allShapes.filter((s) => state.selectedIds().includes(s.id));
+    }),
+    visibleShapes: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return [];
+
+      return tab.layers
+        .filter((l) => l.isVisible)
+        .flatMap((l) =>
+          l.shapes.map((s) => ({
+            ...s,
+            layerId: l.id,
+            layerLocked: l.isLocked,
+            opacity: l.opacity ?? 1,
+          })),
+        );
+    }),
+    isSlabDefined: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return false;
+      const allShapes = tab.layers.flatMap((l) => l.shapes);
+      return allShapes.some((s) => s.type === "polygon" || s.type === "slab");
+    }),
+    slabShapes: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return [];
+      return tab.layers.flatMap((l) => l.shapes).filter((s) => s.type === "slab");
+    }),
+    panelShapes: computed(() => {
+      const tab = state.tabs().find((t) => t.id === state.activeTabId());
+      if (!tab) return [];
+      return tab.layers.flatMap((l) => l.shapes).filter((s) => s.type === "panel");
+    }),
   })),
 
   withMethods((store) => {
@@ -141,30 +178,86 @@ export const EditorStore = signalStore(
     return {
       // Shape CRUD
       addShape(shape: Shape) {
-        patchState(store, { shapes: [...store.shapes(), shape] });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) =>
+                    // Add to active layer or first layer
+                    l.id === state.activeLayerId
+                      ? { ...l, shapes: [...l.shapes, shape] }
+                      : l,
+                  ),
+                }
+              : t,
+          ),
+        }));
       },
 
       updateShape(id: string, updates: Partial<Shape>) {
-        patchState(store, {
-          shapes: store
-            .shapes()
-            .map((s) => (s.id === id ? ({ ...s, ...updates } as Shape) : s)),
-        });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) => ({
+                    ...l,
+                    shapes: l.shapes.map((s) =>
+                      s.id === id ? ({ ...s, ...updates } as Shape) : s,
+                    ),
+                  })),
+                }
+              : t,
+          ),
+        }));
       },
 
       removeShape(id: string) {
-        patchState(store, {
-          shapes: store.shapes().filter((s) => s.id !== id),
-          selectedIds: store.selectedIds().filter((sid) => sid !== id),
-        });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) => ({
+                    ...l,
+                    shapes: l.shapes.filter((s) => s.id !== id),
+                  })),
+                }
+              : t,
+          ),
+          selectedIds: state.selectedIds.filter((sid) => sid !== id),
+        }));
       },
 
       removeSelectedShapes() {
+        const activeTabId = store.activeTabId();
         const selected = store.selectedIds();
-        patchState(store, {
-          shapes: store.shapes().filter((s: Shape) => !selected.includes(s.id)),
+        if (!activeTabId || selected.length === 0) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) => ({
+                    ...l,
+                    shapes: l.shapes.filter((s) => !selected.includes(s.id)),
+                  })),
+                }
+              : t,
+          ),
           selectedIds: [],
-        });
+        }));
       },
 
       // Selection
@@ -223,7 +316,7 @@ export const EditorStore = signalStore(
       },
 
       panBy(delta: Point) {
-        patchState(store, (state: EditorState) => ({
+        patchState(store, (state: EditorExtendedState) => ({
           panX: state.panX + delta.x,
           panY: state.panY + delta.y,
         }));
@@ -232,11 +325,10 @@ export const EditorStore = signalStore(
       generateAutoLayout: rxMethod<string | void>(
         pipe(
           switchMap((shapeId) => {
-            const state = store.shapes();
-            // If shapeId is provided, find that specific shape, otherwise find first polygon/slab
+            const allShapes = store.allShapes();
             const slabShape = shapeId
-              ? state.find((s) => s.id === shapeId)
-              : state.find((s) => s.type === "polygon" || s.type === "slab");
+              ? allShapes.find((s) => s.id === shapeId)
+              : allShapes.find((s) => s.type === "polygon" || s.type === "slab");
 
             if (
               !slabShape ||
@@ -300,10 +392,10 @@ export const EditorStore = signalStore(
       generateOptimalLayout: rxMethod<string | void>(
         pipe(
           switchMap((shapeId) => {
-            const state = store.shapes();
+            const allShapes = store.allShapes();
             const slabShape = shapeId
-              ? state.find((s) => s.id === shapeId)
-              : state.find((s) => s.type === "polygon" || s.type === "slab");
+              ? allShapes.find((s) => s.id === shapeId)
+              : allShapes.find((s) => s.type === "polygon" || s.type === "slab");
 
             if (
               !slabShape ||
@@ -393,81 +485,89 @@ export const EditorStore = signalStore(
         ),
       ),
 
-      // Layers
       setActiveLayer(layerId: string) {
         patchState(store, { activeLayerId: layerId });
       },
 
       toggleLayerVisibility(layerId: string) {
-        patchState(store, {
-          layers: store
-            .layers()
-            .map((l: LayerState) =>
-              l.id === layerId ? { ...l, visible: !l.visible } : l,
-            ),
-        });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) =>
+                    l.id === layerId ? { ...l, isVisible: !l.isVisible } : l,
+                  ),
+                }
+              : t,
+          ),
+        }));
       },
 
       toggleLayerLock(layerId: string) {
-        patchState(store, {
-          layers: store
-            .layers()
-            .map((l: LayerState) =>
-              l.id === layerId ? { ...l, locked: !l.locked } : l,
-            ),
-        });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) =>
+                    l.id === layerId ? { ...l, isLocked: !l.isLocked } : l,
+                  ),
+                }
+              : t,
+          ),
+        }));
       },
 
       setLayerOpacity(layerId: string, opacity: number) {
-        patchState(store, {
-          layers: store
-            .layers()
-            .map((l: LayerState) => (l.id === layerId ? { ...l, opacity } : l)),
-        });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) =>
+                    l.id === layerId ? { ...l, opacity } : l,
+                  ),
+                }
+              : t,
+          ),
+        }));
       },
 
-      /** Create a new user layer */
-      createLayer(name: string, color?: string): string {
-        const id = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const newLayer: LayerState = {
-          id,
-          name,
-          category: "user",
-          visible: true,
-          locked: false,
-          opacity: 1,
-          isEditable: true,
-          isRemovable: true,
-          color: color || this.generateLayerColor(),
-        };
-        patchState(store, {
-          layers: [...store.layers(), newLayer],
-          activeLayerId: id,
-        });
-        return id;
+      createLayerInActiveTab(name: string, type: EditorLayer["type"] = "user"): string | null {
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return null;
+
+        const newLayer = createDefaultLayer(name, type);
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? { ...t, layers: [...t.layers, newLayer] }
+              : t,
+          ),
+          activeLayerId: newLayer.id,
+        }));
+
+        return newLayer.id;
       },
 
-      /** Generate a random color for new layers */
-      generateLayerColor(): string {
-        const colors = [
-          "#e91e63",
-          "#9c27b0",
-          "#673ab7",
-          "#3f51b5",
-          "#2196f3",
-          "#00bcd4",
-          "#009688",
-          "#4caf50",
-          "#8bc34a",
-          "#ff9800",
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
-      },
-
-      /** Rename a user layer */
       renameLayer(layerId: string, newName: string) {
-        const layer = store.layers().find((l) => l.id === layerId);
-        if (!layer || !layer.isEditable) {
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        const tab = store.tabs().find((t) => t.id === activeTabId);
+        const layer = tab?.layers.find((l) => l.id === layerId);
+        if (!layer || layer.type === "system") {
           messageService.add({
             severity: "warn",
             summary: "Uwaga",
@@ -476,19 +576,28 @@ export const EditorStore = signalStore(
           });
           return;
         }
-        patchState(store, {
-          layers: store
-            .layers()
-            .map((l: LayerState) =>
-              l.id === layerId ? { ...l, name: newName } : l,
-            ),
-        });
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? {
+                  ...t,
+                  layers: t.layers.map((l) =>
+                    l.id === layerId ? { ...l, name: newName } : l,
+                  ),
+                }
+              : t,
+          ),
+        }));
       },
 
-      /** Delete a user layer */
       deleteLayer(layerId: string) {
-        const layer = store.layers().find((l) => l.id === layerId);
-        if (!layer || !layer.isRemovable) {
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        const tab = store.tabs().find((t) => t.id === activeTabId);
+        const layer = tab?.layers.find((l) => l.id === layerId);
+        if (!layer || layer.type === "system") {
           messageService.add({
             severity: "warn",
             summary: "Uwaga",
@@ -497,17 +606,25 @@ export const EditorStore = signalStore(
           });
           return;
         }
-        // Remove all shapes from this layer first
-        patchState(store, {
-          shapes: store.shapes().filter((s) => s.layer !== layerId),
-          layers: store.layers().filter((l) => l.id !== layerId),
-          activeLayerId:
-            store.activeLayerId() === layerId ? "slab" : store.activeLayerId(),
-          selectedIds: store.selectedIds().filter((id) => {
-            const shape = store.shapes().find((s) => s.id === id);
-            return shape?.layer !== layerId;
-          }),
+
+        patchState(store, (state: EditorExtendedState) => {
+          const updatedTabs = state.tabs.map((t) =>
+            t.id === activeTabId
+              ? { ...t, layers: t.layers.filter((l) => l.id !== layerId) }
+              : t,
+          );
+          const remainingLayers = updatedTabs.find((t) => t.id === activeTabId)?.layers ?? [];
+
+          return {
+            tabs: updatedTabs,
+            activeLayerId:
+              state.activeLayerId === layerId
+                ? remainingLayers[0]?.id ?? null
+                : state.activeLayerId,
+            selectedIds: [],
+          };
         });
+
         messageService.add({
           severity: "success",
           summary: "Sukces",
@@ -516,10 +633,10 @@ export const EditorStore = signalStore(
         });
       },
 
-      /** Create a new layer from current selection */
       saveSelectionAsLayer(layerName: string) {
+        const activeTabId = store.activeTabId();
         const selectedIds = store.selectedIds();
-        if (selectedIds.length === 0) {
+        if (!activeTabId || selectedIds.length === 0) {
           messageService.add({
             severity: "warn",
             summary: "Uwaga",
@@ -528,16 +645,35 @@ export const EditorStore = signalStore(
           });
           return;
         }
-        // Create new layer
-        const layerId = this.createLayer(layerName);
-        // Move shapes to new layer
-        patchState(store, {
-          shapes: store
-            .shapes()
-            .map((s) =>
-              selectedIds.includes(s.id) ? { ...s, layer: layerId } : s,
-            ),
-        });
+
+        const newLayer = createDefaultLayer(layerName, "user");
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) => {
+            if (t.id !== activeTabId) return t;
+
+            const shapesToMove: Shape[] = [];
+            const updatedLayers = t.layers.map((l) => {
+              const remaining: Shape[] = [];
+              l.shapes.forEach((s) => {
+                if (selectedIds.includes(s.id)) {
+                  shapesToMove.push(s);
+                } else {
+                  remaining.push(s);
+                }
+              });
+              return { ...l, shapes: remaining };
+            });
+
+            return {
+              ...t,
+              layers: [...updatedLayers, { ...newLayer, shapes: shapesToMove }],
+            };
+          }),
+          activeLayerId: newLayer.id,
+          selectedIds: [],
+        }));
+
         messageService.add({
           severity: "success",
           summary: "Sukces",
@@ -546,10 +682,10 @@ export const EditorStore = signalStore(
         });
       },
 
-      /** Move current selection to an existing layer */
       moveSelectionToLayer(targetLayerId: string) {
+        const activeTabId = store.activeTabId();
         const selectedIds = store.selectedIds();
-        if (selectedIds.length === 0) {
+        if (!activeTabId || selectedIds.length === 0) {
           messageService.add({
             severity: "warn",
             summary: "Uwaga",
@@ -558,16 +694,42 @@ export const EditorStore = signalStore(
           });
           return;
         }
-        const targetLayer = store.layers().find((l) => l.id === targetLayerId);
+
+        const tab = store.tabs().find((t) => t.id === activeTabId);
+        const targetLayer = tab?.layers.find((l) => l.id === targetLayerId);
         if (!targetLayer) return;
 
-        patchState(store, {
-          shapes: store
-            .shapes()
-            .map((s) =>
-              selectedIds.includes(s.id) ? { ...s, layer: targetLayerId } : s,
-            ),
-        });
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) => {
+            if (t.id !== activeTabId) return t;
+
+            const shapesToMove: Shape[] = [];
+            const updatedLayers = t.layers.map((l) => {
+              if (l.id === targetLayerId) return l;
+
+              const remaining: Shape[] = [];
+              l.shapes.forEach((s) => {
+                if (selectedIds.includes(s.id)) {
+                  shapesToMove.push(s);
+                } else {
+                  remaining.push(s);
+                }
+              });
+              return { ...l, shapes: remaining };
+            });
+
+            return {
+              ...t,
+              layers: updatedLayers.map((l) =>
+                l.id === targetLayerId
+                  ? { ...l, shapes: [...l.shapes, ...shapesToMove] }
+                  : l,
+              ),
+            };
+          }),
+          selectedIds: [],
+        }));
+
         messageService.add({
           severity: "success",
           summary: "Sukces",
@@ -576,16 +738,27 @@ export const EditorStore = signalStore(
         });
       },
 
-      /** Reorder layers by moving a layer to a new index */
       reorderLayers(layerId: string, newIndex: number) {
-        const layers = [...store.layers()];
-        const currentIndex = layers.findIndex((l) => l.id === layerId);
-        if (currentIndex === -1 || newIndex < 0 || newIndex >= layers.length)
-          return;
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
 
-        const [removed] = layers.splice(currentIndex, 1);
-        layers.splice(newIndex, 0, removed);
-        patchState(store, { layers });
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) => {
+            if (t.id !== activeTabId) return t;
+            const layers = [...t.layers];
+            const currentIndex = layers.findIndex((l) => l.id === layerId);
+            if (
+              currentIndex === -1 ||
+              newIndex < 0 ||
+              newIndex >= layers.length
+            )
+              return t;
+
+            const [removed] = layers.splice(currentIndex, 1);
+            layers.splice(newIndex, 0, removed);
+            return { ...t, layers };
+          }),
+        }));
       },
 
       snapToGridPoint(point: Point): Point {
@@ -625,7 +798,6 @@ export const EditorStore = signalStore(
         return bestPoint;
       },
 
-      // Import project data
       loadFromProject(
         shapes: Shape[],
         backgroundUrl?: string | null,
@@ -637,19 +809,25 @@ export const EditorStore = signalStore(
           hasRef: !!referenceGeometry,
         });
 
-        // If project has svgPath, prefer it over generic PDF background
         const finalBgUrl = backgroundUrl
           ? backgroundUrl.startsWith("http")
             ? backgroundUrl
             : `http://localhost:3000${backgroundUrl}`
           : null;
 
+        const defaultTab = createDefaultTab("Strona 1");
+        if (shapes.length > 0) {
+          defaultTab.layers[0].shapes = shapes;
+        }
+
         patchState(store, {
-          shapes,
+          tabs: [defaultTab],
+          activeTabId: defaultTab.id,
+          activeLayerId: defaultTab.layers[0]?.id ?? null,
           selectedIds: [],
           backgroundUrl: finalBgUrl || null,
           referenceGeometry: referenceGeometry || null,
-          projectId: store.projectId() || null, // Keep existing if not provided
+          projectId: store.projectId() || null,
         });
       },
 
@@ -661,26 +839,11 @@ export const EditorStore = signalStore(
         pipe(
           switchMap(() => {
             const id = store.projectId();
-            if (!id) {
-              messageService.add({
-                severity: "error",
-                summary: "Błąd",
-                detail: "Brak ID projektu - nie można zapisać",
-              });
-              return [];
-            }
+            if (!id) return [];
 
-            const shapes = store.shapes();
-            const slabShapes = store.slabShapes();
-
-            // Prepare results
-            const optimizationResult = JSON.stringify({ shapes });
-            const extractedSlabGeometry =
-              slabShapes.length > 0
-                ? JSON.stringify({
-                    polygons: slabShapes.map((s: Shape) => s.points),
-                  })
-                : undefined;
+            const editorData: EditorData = {
+              tabs: store.tabs(),
+            };
 
             messageService.add({
               severity: "info",
@@ -689,32 +852,174 @@ export const EditorStore = signalStore(
               life: 1000,
             });
 
-            return projectsService
-              .update(id, {
-                optimizationResult,
-                extractedSlabGeometry,
-              })
-              .pipe(
-                tap(() => {
-                  messageService.add({
-                    severity: "success",
-                    summary: "Sukces",
-                    detail: "Projekt został zapisany",
-                  });
-                }),
-                catchError((err) => {
-                  console.error("Save failed", err);
-                  messageService.add({
-                    severity: "error",
-                    summary: "Błąd",
-                    detail: "Nie udało się zapisać projektu",
-                  });
-                  return [];
-                }),
-              );
+            return projectsService.updateEditorData(id, editorData).pipe(
+              tap(() => {
+                messageService.add({
+                  severity: "success",
+                  summary: "Sukces",
+                  detail: "Projekt został zapisany",
+                });
+              }),
+              catchError((err) => {
+                console.error("Save failed", err);
+                messageService.add({
+                  severity: "error",
+                  summary: "Błąd",
+                  detail: "Nie udało się zapisać projektu",
+                });
+                return [];
+              }),
+            );
           }),
         ),
       ),
+
+      loadEditorData: rxMethod<string>(
+        pipe(
+          tap(() => patchState(store, setLoading())),
+          switchMap((projectId) => {
+            console.log("DEBUG: Initializing editor for project:", projectId);
+            return projectsService.getById(projectId).pipe(
+              tap((project) => {
+                console.log("DEBUG: Project data loaded:", {
+                  id: project.id,
+                  hasEditorData: !!project.editorData,
+                  editorDataTabs: (project.editorData as EditorData)?.tabs?.length,
+                  svgPath: project.svgPath,
+                });
+
+                const finalBgUrl = project.svgPath
+                  ? project.svgPath.startsWith("http")
+                    ? project.svgPath
+                    : `http://localhost:3000${project.svgPath}`
+                  : null;
+
+                let tabs: EditorTab[] = [];
+                let activeTabId: string | null = null;
+                let activeLayerId: string | null = null;
+
+                if (project.editorData) {
+                  const data = project.editorData as EditorData;
+                  if (data.tabs && data.tabs.length > 0) {
+                    tabs = data.tabs;
+                    const activeTab = data.tabs.find((t) => t.active) || data.tabs[0];
+                    activeTabId = activeTab?.id || null;
+                    activeLayerId = activeTab?.layers?.[0]?.id || null;
+                  }
+                }
+
+                if (tabs.length === 0) {
+                  const defaultTab = createDefaultTab("Strona 1");
+                  tabs = [defaultTab];
+                  activeTabId = defaultTab.id;
+                  activeLayerId = defaultTab.layers[0]?.id ?? null;
+                }
+
+                console.log("DEBUG: Setting editor state:", {
+                  tabsCount: tabs.length,
+                  activeTabId,
+                  activeLayerId,
+                  firstTabLayers: tabs[0]?.layers?.length,
+                  firstLayerShapes: tabs[0]?.layers?.[0]?.shapes?.length,
+                });
+
+                patchState(
+                  store,
+                  {
+                    projectId: project.id,
+                    backgroundUrl: finalBgUrl,
+                    referenceGeometry: project.extractedSlabGeometry || null,
+                    tabs,
+                    activeTabId,
+                    activeLayerId,
+                    selectedIds: [],
+                  },
+                  setLoaded(),
+                );
+              }),
+              catchError((err) => {
+                console.error("Failed to load editor data", err);
+                patchState(store, setError(err.message));
+                return [];
+              }),
+            );
+          }),
+        ),
+      ),
+
+      reloadEditorData() {
+        const projectId = store.projectId();
+        if (projectId) {
+          this.loadEditorData(projectId);
+        }
+      },
+
+      addTab(name: string): string {
+        const newTab = createDefaultTab(name);
+        newTab.active = false;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: [...state.tabs, newTab],
+        }));
+
+        return newTab.id;
+      },
+
+      removeTab(tabId: string) {
+        const tabs = store.tabs();
+        if (tabs.length <= 1) {
+          messageService.add({
+            severity: "warn",
+            summary: "Uwaga",
+            detail: "Nie można usunąć ostatniej strony",
+            life: 3000,
+          });
+          return;
+        }
+
+        const tabIndex = tabs.findIndex((t) => t.id === tabId);
+        const isActive = store.activeTabId() === tabId;
+
+        patchState(store, (state: EditorExtendedState) => {
+          const newTabs = state.tabs.filter((t) => t.id !== tabId);
+          let newActiveTabId = state.activeTabId;
+          let newActiveLayerId = state.activeLayerId;
+
+          if (isActive && newTabs.length > 0) {
+            const newActiveTab = newTabs[Math.min(tabIndex, newTabs.length - 1)];
+            newActiveTabId = newActiveTab.id;
+            newActiveLayerId = newActiveTab.layers[0]?.id ?? null;
+            newTabs.forEach((t) => (t.active = t.id === newActiveTabId));
+          }
+
+          return {
+            tabs: newTabs,
+            activeTabId: newActiveTabId,
+            activeLayerId: newActiveLayerId,
+            selectedIds: [],
+          };
+        });
+      },
+
+      renameTab(tabId: string, newName: string) {
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === tabId ? { ...t, name: newName } : t,
+          ),
+        }));
+      },
+
+      setActiveTab(tabId: string) {
+        const tab = store.tabs().find((t) => t.id === tabId);
+        if (!tab) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          activeTabId: tabId,
+          activeLayerId: tab.layers[0]?.id ?? null,
+          tabs: state.tabs.map((t) => ({ ...t, active: t.id === tabId })),
+          selectedIds: [],
+        }));
+      },
 
       setViewMode(mode: ViewMode) {
         patchState(store, {
@@ -727,22 +1032,29 @@ export const EditorStore = signalStore(
         if (selectedIds.length === 0) return;
 
         const selectedShapes = store
-          .shapes()
+          .allShapes()
           .filter((s: Shape) => selectedIds.includes(s.id));
 
-        // Store selected shapes in session storage to pass to new tab
         const exportId = `export_${Date.now()}`;
         sessionStorage.setItem(exportId, JSON.stringify(selectedShapes));
 
-        // Open new tab with same URL but adding exportId param
         const url = new URL(window.location.href);
         url.searchParams.set("exportId", exportId);
         window.open(url.toString(), "_blank");
       },
 
-      // Clear all
       clearCanvas() {
-        patchState(store, { shapes: [], selectedIds: [] });
+        const activeTabId = store.activeTabId();
+        if (!activeTabId) return;
+
+        patchState(store, (state: EditorExtendedState) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === activeTabId
+              ? { ...t, layers: t.layers.map((l) => ({ ...l, shapes: [] })) }
+              : t,
+          ),
+          selectedIds: [],
+        }));
       },
     };
   }),
@@ -762,7 +1074,6 @@ function processGenerationResult(
         (el.elementType === "panel" || el.type === "panel") &&
         el.positionX !== undefined
       ) {
-        // Position X/Y from backend are in meters, convert to cm (1 unit = 1 px/cm)
         const x = el.positionX * 100;
         const y = el.positionY * 100;
         const w = el.details?.length || 120;
@@ -784,15 +1095,27 @@ function processGenerationResult(
             length: h,
             isGenerated: true,
           } as any,
-          layer: "formwork",
         } as Shape);
       }
     });
 
-    // Update shapes in store
-    patchState(store, (s: EditorState) => ({
-      shapes: [...s.shapes, ...newShapes],
-    }));
+    if (newShapes.length > 0) {
+      const activeTabId = store.activeTabId();
+      const activeLayerId = store.activeLayerId();
+
+      patchState(store, (state: EditorExtendedState) => ({
+        tabs: state.tabs.map((t) => {
+          if (t.id !== activeTabId) return t;
+          return {
+            ...t,
+            layers: t.layers.map((l) => {
+              if (l.id !== activeLayerId) return l;
+              return { ...l, shapes: [...l.shapes, ...newShapes] };
+            }),
+          };
+        }),
+      }));
+    }
 
     messageService.add({
       severity: "success",

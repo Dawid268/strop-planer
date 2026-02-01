@@ -31,10 +31,10 @@ describe("EditorPageComponent", () => {
     };
 
     projectsServiceMock = jasmine.createSpyObj("ProjectsService", [
-      "getOne",
+      "getById",
       "update",
     ]);
-    projectsServiceMock.getOne.and.returnValue(
+    projectsServiceMock.getById.and.returnValue(
       of({
         id: "project-123",
         name: "Test",

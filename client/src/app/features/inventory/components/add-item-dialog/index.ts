@@ -1,1 +1,1 @@
-export * from "./add-item-dialog.component";
+export * from './add-item-dialog.component';

@@ -5,13 +5,13 @@ import {
   signal,
   input,
   inject,
-} from "@angular/core";
-import { CommonModule } from "@angular/common";
-import { ButtonModule } from "primeng/button";
-import { ProgressBarModule } from "primeng/progressbar";
-import { MessageModule } from "primeng/message";
-import { TooltipModule } from "primeng/tooltip";
-import { TranslocoModule, TranslocoService } from "@jsverse/transloco";
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ButtonModule } from 'primeng/button';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { MessageModule } from 'primeng/message';
+import { TooltipModule } from 'primeng/tooltip';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 export interface UploadedFile {
   file: File;
@@ -27,7 +27,7 @@ export interface UploadProgress {
 }
 
 @Component({
-  selector: "app-file-upload",
+  selector: 'app-file-upload',
   standalone: true,
   imports: [
     CommonModule,
@@ -37,8 +37,8 @@ export interface UploadProgress {
     TooltipModule,
     TranslocoModule,
   ],
-  templateUrl: "./file-upload.component.html",
-  styleUrl: "./file-upload.component.scss",
+  templateUrl: './file-upload.component.html',
+  styleUrl: './file-upload.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileUploadComponent {
@@ -59,7 +59,7 @@ export class FileUploadComponent {
   protected readonly errorMessage = signal<string | null>(null);
 
   // Accepted file types
-  protected readonly acceptedTypes = ".pdf,.dwg,.dxf";
+  protected readonly acceptedTypes = '.pdf,.dwg,.dxf';
 
   protected onDragOver(event: DragEvent): void {
     event.preventDefault();
@@ -111,14 +111,14 @@ export class FileUploadComponent {
     const errors: string[] = [];
 
     for (const file of files) {
-      const extension = file.name.split(".").pop()?.toLowerCase();
-      const isValidExtension = ["pdf", "dwg", "dxf"].includes(extension || "");
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      const isValidExtension = ['pdf', 'dwg', 'dxf'].includes(extension || '');
 
       if (!isValidExtension) {
         errors.push(
           `${file.name}: ${this.transloco.translate(
-            "fileUpload.errors.unsupportedFormat"
-          )}`
+            'fileUpload.errors.unsupportedFormat',
+          )}`,
         );
         continue;
       }
@@ -127,8 +127,8 @@ export class FileUploadComponent {
       if (file.size > 50 * 1024 * 1024) {
         errors.push(
           `${file.name}: ${this.transloco.translate(
-            "fileUpload.errors.fileTooLarge"
-          )}`
+            'fileUpload.errors.fileTooLarge',
+          )}`,
         );
         continue;
       }
@@ -137,7 +137,7 @@ export class FileUploadComponent {
         file,
         name: file.name,
         size: file.size,
-        type: extension || "unknown",
+        type: extension || 'unknown',
       });
     }
 
@@ -145,14 +145,14 @@ export class FileUploadComponent {
     const max = this.maxFiles();
     if (validFiles.length > max) {
       errors.push(
-        this.transloco.translate("fileUpload.errors.maxFiles", { max })
+        this.transloco.translate('fileUpload.errors.maxFiles', { max }),
       );
       validFiles.splice(max);
     }
 
     if (errors.length > 0) {
-      this.errorMessage.set(errors.join(". "));
-      this.uploadError.emit(errors.join(". "));
+      this.errorMessage.set(errors.join('. '));
+      this.uploadError.emit(errors.join('. '));
     }
 
     if (validFiles.length > 0) {
@@ -169,22 +169,22 @@ export class FileUploadComponent {
   }
 
   protected formatFileSize(bytes: number): string {
-    if (bytes === 0) return "0 B";
+    if (bytes === 0) return '0 B';
     const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
+    const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   protected getFileIcon(type: string): string {
     switch (type) {
-      case "pdf":
-        return "pi-file-pdf";
-      case "dwg":
-      case "dxf":
-        return "pi-pencil";
+      case 'pdf':
+        return 'pi-file-pdf';
+      case 'dwg':
+      case 'dxf':
+        return 'pi-pencil';
       default:
-        return "pi-file";
+        return 'pi-file';
     }
   }
 }

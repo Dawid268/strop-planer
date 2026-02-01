@@ -8,6 +8,7 @@ import {
 } from "@angular/common/http";
 import { Observable, map, filter } from "rxjs";
 import { environment } from "../../../../environments/environment";
+import { ApiResponse } from "@core/models/api-response.model";
 
 export interface ExtractedPdfData {
   sourceFile: string;
@@ -75,10 +76,11 @@ export class PdfApiService {
   public uploadPdfSimple(file: File): Observable<ExtractedPdfData> {
     const formData = new FormData();
     formData.append("file", file);
-    return this.http.post<ExtractedPdfData>(
-      `${this.apiUrl}/pdf/upload`,
-      formData
-    );
+    return this.http
+      .post<
+        ApiResponse<ExtractedPdfData>
+      >(`${this.apiUrl}/pdf/upload`, formData)
+      .pipe(map((res) => res.data));
   }
 
   /**
@@ -89,10 +91,11 @@ export class PdfApiService {
     files.forEach((file) => {
       formData.append("files", file);
     });
-    return this.http.post<BatchUploadResult>(
-      `${this.apiUrl}/pdf/upload-batch`,
-      formData
-    );
+    return this.http
+      .post<
+        ApiResponse<BatchUploadResult>
+      >(`${this.apiUrl}/pdf/upload-batch`, formData)
+      .pipe(map((res) => res.data));
   }
 
   /**
@@ -106,16 +109,16 @@ export class PdfApiService {
       "POST",
       `${this.apiUrl}/pdf/upload`,
       formData,
-      { reportProgress: true }
+      { reportProgress: true },
     );
 
-    return this.http.request<ExtractedPdfData>(request).pipe(
+    return this.http.request<ApiResponse<ExtractedPdfData>>(request).pipe(
       filter(
-        (event: HttpEvent<ExtractedPdfData>) =>
+        (event: HttpEvent<ApiResponse<ExtractedPdfData>>) =>
           event.type === HttpEventType.UploadProgress ||
-          event.type === HttpEventType.Response
+          event.type === HttpEventType.Response,
       ),
-      map((event: HttpEvent<ExtractedPdfData>): UploadResponse => {
+      map((event: HttpEvent<ApiResponse<ExtractedPdfData>>): UploadResponse => {
         if (event.type === HttpEventType.UploadProgress) {
           const total = event.total || 1;
           const loaded = event.loaded;
@@ -128,12 +131,12 @@ export class PdfApiService {
             },
           };
         }
-        const response = event as HttpResponse<ExtractedPdfData>;
+        const response = event as HttpResponse<ApiResponse<ExtractedPdfData>>;
         return {
           type: "complete",
-          data: response.body as ExtractedPdfData,
+          data: response.body?.data as ExtractedPdfData,
         };
-      })
+      }),
     );
   }
 
