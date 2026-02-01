@@ -22,6 +22,7 @@ import { CanvasDrawingService } from "../../services/canvas-drawing.service";
 import { CanvasInteractionService } from "../../services/canvas-interaction.service";
 import { CanvasStateService } from "../../services/canvas-state.service";
 import { CanvasHistoryService } from "../../services/canvas-history.service";
+import { ViewportService } from "../../services/viewport.service";
 import { ButtonModule } from "primeng/button";
 import { TooltipModule } from "primeng/tooltip";
 
@@ -34,6 +35,7 @@ import { TooltipModule } from "primeng/tooltip";
     CanvasInteractionService,
     CanvasStateService,
     CanvasHistoryService,
+    ViewportService,
   ],
   templateUrl: "./editor-canvas.component.html",
   styleUrls: ["./editor-canvas.component.scss"],
@@ -45,6 +47,7 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly interaction = inject(CanvasInteractionService);
   protected readonly state = inject(CanvasStateService);
   protected readonly history = inject(CanvasHistoryService);
+  protected readonly viewport = inject(ViewportService);
 
   private readonly containerRef =
     viewChild<ElementRef<HTMLDivElement>>("container");
@@ -55,25 +58,51 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private resizeObserver: ResizeObserver | null = null;
   private gridLines: fabric.Line[] = [];
   private clipboard: fabric.FabricObject[] = [];
+  private zoomUnsubscribe: (() => void) | null = null;
+  private panUnsubscribe: (() => void) | null = null;
+  private canvasInitialized = false;
+  private hasAutoFitted = false;
 
   constructor() {
     effect(() => {
-      if (this.canvas) {
-        this.canvas.setZoom(this.store.zoom());
+      const zoom = this.store.zoom();
+      if (this.canvas && this.canvasInitialized && Math.abs(this.canvas.getZoom() - zoom) > 0.001) {
+        this.canvas.setZoom(zoom);
         this.canvas.requestRenderAll();
       }
     });
 
-    effect(() => this.updateGridVisible(this.store.showGrid()));
-    effect(() => this.updateToolMode(this.store.activeTool()));
-    effect(() => this.updateViewMode(this.store.viewMode()));
+    effect(() => {
+      const bgUrl = this.store.backgroundUrl();
+      if (this.canvas && this.canvasInitialized && bgUrl) {
+        this.state.loadSvgFromUrl(this.canvas, bgUrl);
+      } else if (this.canvas && this.canvasInitialized && !bgUrl) {
+        this.state.clearBackground(this.canvas);
+      }
+    });
 
     effect(() => {
-      const shapes = this.store.shapes();
-      const layers = this.store.layers();
-      const activeLayerId = this.store.activeLayerId();
+      if (this.canvasInitialized) {
+        this.updateGridVisible(this.store.showGrid());
+      }
+    });
+    effect(() => {
+      if (this.canvasInitialized) {
+        this.updateToolMode(this.store.activeTool());
+      }
+    });
+    effect(() => {
+      if (this.canvasInitialized) {
+        this.updateViewMode(this.store.viewMode());
+      }
+    });
 
-      if (this.canvas) {
+    effect(() => {
+      this.store.visibleShapes();
+      this.store.activeTabId();
+      this.store.activeLayerId();
+
+      if (this.canvas && this.canvasInitialized) {
         this.syncShapesWithCanvas();
       }
     });
@@ -88,6 +117,8 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    this.zoomUnsubscribe?.();
+    this.panUnsubscribe?.();
     this.canvas?.dispose();
   }
 
@@ -107,10 +138,40 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       targetFindTolerance: 4,
       fireMiddleClick: true,
       stopContextMenu: true,
+      enableRetinaScaling: false,
+      imageSmoothingEnabled: false,
+    });
+
+    (this.canvas as any).skipOffscreen = true;
+
+    this.viewport.setViewportSize(containerEl.clientWidth, containerEl.clientHeight);
+
+    this.zoomUnsubscribe = this.viewport.onZoomChange((zoom) => {
+      if (this.canvas) {
+        this.canvas.setZoom(zoom);
+        this.store.setZoom(zoom);
+        this.canvas.requestRenderAll();
+      }
+    });
+
+    this.panUnsubscribe = this.viewport.onPanChange((x, y) => {
+      if (this.canvas) {
+        const vpt = this.canvas.viewportTransform;
+        if (vpt) {
+          vpt[4] = x;
+          vpt[5] = y;
+          this.canvas.requestRenderAll();
+        }
+      }
     });
 
     this.setupEventHandlers();
+    this.canvasInitialized = true;
     this.updateGridVisible(this.store.showGrid());
+
+    setTimeout(() => {
+      this.syncShapesWithCanvas();
+    }, 100);
   }
 
   private setupEventHandlers(): void {
@@ -137,13 +198,9 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.canvas.on("mouse:wheel", (opt) => {
       const delta = opt.e.deltaY;
-      let zoom = (this.canvas?.getZoom() || 1) * 0.999 ** delta;
-      zoom = Math.max(0.1, Math.min(5, zoom));
-      this.canvas!.zoomToPoint(
-        new fabric.Point(opt.e.offsetX, opt.e.offsetY),
-        zoom,
-      );
-      this.store.setZoom(zoom);
+      const currentZoom = this.viewport.zoom();
+      const newZoom = currentZoom * 0.999 ** delta;
+      this.viewport.setZoom(newZoom, { x: opt.e.offsetX, y: opt.e.offsetY });
       opt.e.preventDefault();
       opt.e.stopPropagation();
     });
@@ -193,11 +250,10 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
       const tool = this.store.activeTool();
 
       if (isPanning) {
-        const vpt = this.canvas!.viewportTransform!;
-        vpt[4] += e.clientX - lastPos.x;
-        vpt[5] += e.clientY - lastPos.y;
+        const deltaX = e.clientX - lastPos.x;
+        const deltaY = e.clientY - lastPos.y;
         lastPos = { x: e.clientX, y: e.clientY };
-        this.canvas!.requestRenderAll();
+        this.viewport.panBy(deltaX, deltaY);
         return;
       }
 
@@ -311,10 +367,10 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!el) return;
     this.resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        this.canvas?.setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        });
+        const width = entry.contentRect.width;
+        const height = entry.contentRect.height;
+        this.canvas?.setDimensions({ width, height });
+        this.viewport.setViewportSize(width, height);
         this.canvas?.requestRenderAll();
       }
     });
@@ -468,13 +524,11 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   public syncShapesWithCanvas(): void {
     if (!this.canvas) return;
 
-    // Clear only existing store-managed shapes
     this.canvas.getObjects().forEach((obj) => {
       const customData = (obj as CustomFabricObject).customData;
       if (
         customData?.id &&
         !customData.isFromSvg &&
-        !customData.isFromGeometry &&
         !customData.isGrid
       ) {
         this.canvas?.remove(obj);
@@ -482,28 +536,49 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.canvas?.discardActiveObject();
 
-    const shapes = this.store.visibleShapes();
-    const layers = this.store.layers();
+    const allShapes = this.store.visibleShapes();
+    const isAiShape = (id: string) => id?.startsWith('ai-poly-');
 
-    shapes.forEach((shape) => {
+    const MAX_AI_SHAPES = 20000;
+    const aiShapes = allShapes.filter((s: any) => isAiShape(s.id)).slice(0, MAX_AI_SHAPES);
+    const userShapes = allShapes.filter((s: any) => !isAiShape(s.id));
+    const shapes = [...userShapes, ...aiShapes];
+
+    this.canvas.renderOnAddRemove = false;
+
+    shapes.forEach((shape: any) => {
       let fabricObj: fabric.FabricObject | null = null;
-      const layer = layers.find((l) => l.name === shape.layer);
-      const isLocked = layer?.locked ?? false;
-      const opacity = layer?.opacity ?? 1;
+      const isLocked = shape.layerLocked ?? false;
+      const opacity = shape.opacity ?? 1;
+      const isAi = isAiShape(shape.id);
 
       switch (shape.type) {
         case "slab":
         case "polygon":
-          if (shape.points) {
-            fabricObj = new fabric.Polygon(shape.points, {
-              fill: CANVAS_COLORS.POLYGON_FILL,
-              stroke: CANVAS_COLORS.POLYGON_STROKE,
-              strokeWidth: 2,
-            });
+          if (shape.points && shape.points.length >= 2) {
+            if (isAi) {
+              fabricObj = new fabric.Polyline(shape.points, {
+                left: shape.x || 0,
+                top: shape.y || 0,
+                fill: 'transparent',
+                stroke: '#333333',
+                strokeWidth: 0.5,
+                objectCaching: true,
+                hasControls: false,
+                hasBorders: false,
+              });
+            } else if (shape.points.length >= 3) {
+              fabricObj = new fabric.Polygon(shape.points, {
+                left: shape.x || 0,
+                top: shape.y || 0,
+                fill: CANVAS_COLORS.POLYGON_FILL,
+                stroke: CANVAS_COLORS.POLYGON_STROKE,
+                strokeWidth: 2,
+              });
+            }
           }
           break;
         case "beam":
-          // assume beams are lines
           break;
         case "panel":
           fabricObj = new fabric.Rect({
@@ -532,23 +607,92 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
             originY: "center",
           });
           break;
+        case "rectangle":
+          if (shape.width && shape.height) {
+            fabricObj = new fabric.Rect({
+              left: shape.x,
+              top: shape.y,
+              width: shape.width,
+              height: shape.height,
+              fill: "rgba(200, 200, 200, 0.3)",
+              stroke: "#666",
+              strokeWidth: 1,
+              angle: shape.rotation || 0,
+            });
+          }
+          break;
       }
 
       if (fabricObj) {
         (fabricObj as CustomFabricObject).customData = {
           id: shape.id,
           type: shape.type as any,
+          layerId: shape.layerId,
         };
         fabricObj.set({
-          selectable: !isLocked,
-          evented: !isLocked,
+          selectable: !isLocked && !isAi,
+          evented: !isLocked && !isAi,
           opacity: opacity,
         });
         this.canvas?.add(fabricObj);
       }
     });
 
+    this.canvas.renderOnAddRemove = true;
     this.state.updateObjectCount(this.canvas);
+    this.canvas.requestRenderAll();
+
+    const hasObjects = this.canvas.getObjects().some(
+      (o) => !(o as CustomFabricObject).customData?.isGrid
+    );
+    if (!this.hasAutoFitted && hasObjects) {
+      this.hasAutoFitted = true;
+      setTimeout(() => this.zoomToContent(), 100);
+    }
+  }
+
+  private zoomToContent(): void {
+    if (!this.canvas) return;
+
+    const objects = this.canvas.getObjects().filter(
+      (o) => !(o as CustomFabricObject).customData?.isGrid
+    );
+
+    if (objects.length === 0) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    objects.forEach((obj) => {
+      const bounds = obj.getBoundingRect();
+      minX = Math.min(minX, bounds.left);
+      minY = Math.min(minY, bounds.top);
+      maxX = Math.max(maxX, bounds.left + bounds.width);
+      maxY = Math.max(maxY, bounds.top + bounds.height);
+    });
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    const canvasWidth = this.canvas.getWidth();
+    const canvasHeight = this.canvas.getHeight();
+
+    const padding = 50;
+    const scaleX = (canvasWidth - padding * 2) / contentWidth;
+    const scaleY = (canvasHeight - padding * 2) / contentHeight;
+    const scale = Math.min(scaleX, scaleY, 1);
+
+    const centerX = minX + contentWidth / 2;
+    const centerY = minY + contentHeight / 2;
+
+    const vpt = this.canvas.viewportTransform;
+    if (vpt) {
+      vpt[0] = scale;
+      vpt[3] = scale;
+      vpt[4] = canvasWidth / 2 - centerX * scale;
+      vpt[5] = canvasHeight / 2 - centerY * scale;
+      this.canvas.setViewportTransform(vpt);
+    }
+
+    this.store.setZoom(scale);
     this.canvas.requestRenderAll();
   }
 }

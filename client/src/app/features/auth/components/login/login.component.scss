@@ -1,0 +1,14 @@
+.auth-container {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-800) 100%
+  );
+}
+::ng-deep .auth-card {
+  width: 100%;
+  max-width: 450px;
+}
+::ng-deep .p-card .p-card-header {
+  background: transparent;
+}

@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts,.html"
   },
   "prettier": {
     "overrides": [
@@ -36,6 +37,9 @@
     "@types/three": "^0.182.0",
     "dxf-parser": "^1.1.2",
     "fabric": "^6.9.1",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
+    "lucide-angular": "^0.563.0",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^21.0.3",
@@ -46,17 +50,31 @@
     "zone.js": "^0.16.0"
   },
   "devDependencies": {
+    "@angular-eslint/eslint-plugin": "^21.2.0",
+    "@angular-eslint/eslint-plugin-template": "^21.2.0",
+    "@angular-eslint/template-parser": "^21.2.0",
     "@angular/build": "^20.0.5",
     "@angular/cli": "^20.0.5",
     "@angular/compiler-cli": "^20.0.0",
+    "@angular/platform-browser-dynamic": "^20.3.16",
     "@types/jasmine": "~5.1.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.0.9",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-angular": "^5.0.0",
     "jasmine-core": "~5.7.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "jest-preset-angular": "^16.0.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.2"
   }
 }

@@ -1,26 +1,26 @@
-import "zone.js";
-import "zone.js/testing";
-import { TestBed } from "@angular/core/testing";
-import { EditorStore } from "./editor.store";
-import { ProjectsService } from "../../projects/services/projects.service";
-import { FormworkApiService } from "../../projects/services/formwork-api.service";
-import { MessageService } from "primeng/api";
-import { of, throwError } from "rxjs";
-import { Shape } from "../models/editor.models";
+import 'zone.js';
+import 'zone.js/testing';
+import { TestBed } from '@angular/core/testing';
+import { EditorStore } from './editor.store';
+import { ProjectsService } from '../../projects/services/projects.service';
+import { FormworkApiService } from '../../projects/services/formwork-api.service';
+import { MessageService } from 'primeng/api';
+import { of, throwError } from 'rxjs';
+import { Shape } from '../models/editor.models';
 
-describe("EditorStore", () => {
+describe('EditorStore', () => {
   let store: any;
   let projectsServiceMock: jasmine.SpyObj<ProjectsService>;
   let formworkApiServiceMock: jasmine.SpyObj<FormworkApiService>;
   let messageServiceMock: jasmine.SpyObj<MessageService>;
 
   beforeEach(() => {
-    projectsServiceMock = jasmine.createSpyObj("ProjectsService", ["update"]);
-    formworkApiServiceMock = jasmine.createSpyObj("FormworkApiService", [
-      "calculate",
-      "optimize",
+    projectsServiceMock = jasmine.createSpyObj('ProjectsService', ['update']);
+    formworkApiServiceMock = jasmine.createSpyObj('FormworkApiService', [
+      'calculate',
+      'optimize',
     ]);
-    messageServiceMock = jasmine.createSpyObj("MessageService", ["add"]);
+    messageServiceMock = jasmine.createSpyObj('MessageService', ['add']);
 
     TestBed.configureTestingModule({
       providers: [
@@ -34,29 +34,29 @@ describe("EditorStore", () => {
     store = TestBed.inject(EditorStore);
   });
 
-  it("should be created", () => {
+  it('should be created', () => {
     expect(store).toBeTruthy();
   });
 
-  it("should initialize with initial state", () => {
+  it('should initialize with initial state', () => {
     expect(store.shapes()).toEqual([]);
     expect(store.projectId()).toBeNull();
-    expect(store.viewMode()).toBe("full");
+    expect(store.viewMode()).toBe('full');
   });
 
-  describe("setProjectId", () => {
-    it("should update projectId", () => {
-      store.setProjectId("test-project-123");
-      expect(store.projectId()).toBe("test-project-123");
+  describe('setProjectId', () => {
+    it('should update projectId', () => {
+      store.setProjectId('test-project-123');
+      expect(store.projectId()).toBe('test-project-123');
     });
   });
 
-  describe("loadFromProject", () => {
-    it("should load shapes and background URL", () => {
+  describe('loadFromProject', () => {
+    it('should load shapes and background URL', () => {
       const mockShapes: Shape[] = [
-        { id: "1", type: "slab", x: 0, y: 0, points: [] } as any,
+        { id: '1', type: 'slab', x: 0, y: 0, points: [] } as any,
       ];
-      const mockBg = "http://example.com/bg.svg";
+      const mockBg = 'http://example.com/bg.svg';
 
       store.loadFromProject(mockShapes, mockBg);
 
@@ -65,29 +65,29 @@ describe("EditorStore", () => {
     });
   });
 
-  describe("save", () => {
-    it("should NOT call update if projectId is missing", () => {
+  describe('save', () => {
+    it('should NOT call update if projectId is missing', () => {
       store.save();
 
       expect(projectsServiceMock.update).not.toHaveBeenCalled();
       expect(messageServiceMock.add).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          severity: "error",
-          summary: "Błąd",
-          detail: "Brak ID projektu - nie można zapisać",
+          severity: 'error',
+          summary: 'Błąd',
+          detail: 'Brak ID projektu - nie można zapisać',
         }),
       );
     });
 
-    it("should call projectsService.update with correct payload when successful", () => {
-      const projectId = "project-123";
+    it('should call projectsService.update with correct payload when successful', () => {
+      const projectId = 'project-123';
       const mockShapes: Shape[] = [
-        { id: "1", type: "panel", x: 10, y: 20, width: 100, height: 50 } as any,
+        { id: '1', type: 'panel', x: 10, y: 20, width: 100, height: 50 } as any,
       ];
       const slabShapes: Shape[] = [
         {
-          id: "slab-1",
-          type: "slab",
+          id: 'slab-1',
+          type: 'slab',
           x: 0,
           y: 0,
           points: [
@@ -125,25 +125,25 @@ describe("EditorStore", () => {
 
       expect(messageServiceMock.add).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          severity: "success",
-          summary: "Sukces",
+          severity: 'success',
+          summary: 'Sukces',
         }),
       );
     });
 
-    it("should handle save error", () => {
-      store.setProjectId("project-123");
+    it('should handle save error', () => {
+      store.setProjectId('project-123');
       projectsServiceMock.update.and.returnValue(
-        throwError(() => new Error("API Error")),
+        throwError(() => new Error('API Error')),
       );
 
       store.save();
 
       expect(messageServiceMock.add).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          severity: "error",
-          summary: "Błąd",
-          detail: "Nie udało się zapisać projektu",
+          severity: 'error',
+          summary: 'Błąd',
+          detail: 'Nie udało się zapisać projektu',
         }),
       );
     });

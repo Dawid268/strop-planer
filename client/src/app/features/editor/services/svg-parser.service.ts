@@ -1,11 +1,11 @@
-import { HttpClient } from "@angular/common/http";
-import { inject, Injectable } from "@angular/core";
-import { Observable, map } from "rxjs";
-import type { Shape, Point } from "../models/editor.models";
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import type { Shape, Point } from '../models/editor.models';
 
 export interface ParsedSvgShape {
   id: string;
-  type: "polygon" | "path" | "rectangle" | "line";
+  type: 'polygon' | 'path' | 'rectangle' | 'line';
   points: Point[];
   x: number;
   y: number;
@@ -15,7 +15,7 @@ export interface ParsedSvgShape {
 }
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root',
 })
 export class SvgParserService {
   private readonly http = inject(HttpClient);
@@ -25,7 +25,7 @@ export class SvgParserService {
    */
   parseFromUrl(svgUrl: string): Observable<Shape[]> {
     return this.http
-      .get(svgUrl, { responseType: "text" })
+      .get(svgUrl, { responseType: 'text' })
       .pipe(map((svgContent) => this.parseSvgContent(svgContent)));
   }
 
@@ -34,13 +34,13 @@ export class SvgParserService {
    */
   parseSvgContent(svgContent: string): Shape[] {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(svgContent, "image/svg+xml");
+    const doc = parser.parseFromString(svgContent, 'image/svg+xml');
     const shapes: Shape[] = [];
 
     // Get all path elements
-    const paths = doc.querySelectorAll("path");
+    const paths = doc.querySelectorAll('path');
     paths.forEach((pathEl, index) => {
-      const d = pathEl.getAttribute("d");
+      const d = pathEl.getAttribute('d');
       if (d) {
         const shape = this.parsePathToShape(d, `svg-path-${index}`);
         if (shape) {
@@ -50,7 +50,7 @@ export class SvgParserService {
     });
 
     // Get all rect elements
-    const rects = doc.querySelectorAll("rect");
+    const rects = doc.querySelectorAll('rect');
     rects.forEach((rectEl, index) => {
       const shape = this.parseRectToShape(rectEl, `svg-rect-${index}`);
       if (shape) {
@@ -59,7 +59,7 @@ export class SvgParserService {
     });
 
     // Get all line elements
-    const lines = doc.querySelectorAll("line");
+    const lines = doc.querySelectorAll('line');
     lines.forEach((lineEl, index) => {
       const shape = this.parseLineToShape(lineEl, `svg-line-${index}`);
       if (shape) {
@@ -68,7 +68,7 @@ export class SvgParserService {
     });
 
     // Get all polygon elements
-    const polygons = doc.querySelectorAll("polygon");
+    const polygons = doc.querySelectorAll('polygon');
     polygons.forEach((polyEl, index) => {
       const shape = this.parsePolygonToShape(polyEl, `svg-polygon-${index}`);
       if (shape) {
@@ -77,7 +77,7 @@ export class SvgParserService {
     });
 
     // Get all polyline elements
-    const polylines = doc.querySelectorAll("polyline");
+    const polylines = doc.querySelectorAll('polyline');
     polylines.forEach((polyEl, index) => {
       const shape = this.parsePolylineToShape(polyEl, `svg-polyline-${index}`);
       if (shape) {
@@ -113,13 +113,13 @@ export class SvgParserService {
 
     return {
       id,
-      type: isPolygon ? "polygon" : "rectangle",
+      type: isPolygon ? 'polygon' : 'rectangle',
       x: minX,
       y: minY,
       rotation: 0,
       selected: false,
       locked: false,
-      layer: "slab",
+      layer: 'slab',
       points: normalizedPoints,
       properties: {
         originalPath: d,
@@ -149,7 +149,7 @@ export class SvgParserService {
         .map(Number);
 
       switch (type) {
-        case "M": // Move to absolute
+        case 'M': // Move to absolute
           if (params.length >= 2) {
             currentX = params[0];
             currentY = params[1];
@@ -165,7 +165,7 @@ export class SvgParserService {
           }
           break;
 
-        case "m": // Move to relative
+        case 'm': // Move to relative
           if (params.length >= 2) {
             currentX += params[0];
             currentY += params[1];
@@ -180,7 +180,7 @@ export class SvgParserService {
           }
           break;
 
-        case "L": // Line to absolute
+        case 'L': // Line to absolute
           for (let i = 0; i < params.length; i += 2) {
             if (i + 1 < params.length) {
               currentX = params[i];
@@ -190,7 +190,7 @@ export class SvgParserService {
           }
           break;
 
-        case "l": // Line to relative
+        case 'l': // Line to relative
           for (let i = 0; i < params.length; i += 2) {
             if (i + 1 < params.length) {
               currentX += params[i];
@@ -200,41 +200,41 @@ export class SvgParserService {
           }
           break;
 
-        case "H": // Horizontal line absolute
+        case 'H': // Horizontal line absolute
           for (const x of params) {
             currentX = x;
             points.push({ x: currentX, y: currentY });
           }
           break;
 
-        case "h": // Horizontal line relative
+        case 'h': // Horizontal line relative
           for (const dx of params) {
             currentX += dx;
             points.push({ x: currentX, y: currentY });
           }
           break;
 
-        case "V": // Vertical line absolute
+        case 'V': // Vertical line absolute
           for (const y of params) {
             currentY = y;
             points.push({ x: currentX, y: currentY });
           }
           break;
 
-        case "v": // Vertical line relative
+        case 'v': // Vertical line relative
           for (const dy of params) {
             currentY += dy;
             points.push({ x: currentX, y: currentY });
           }
           break;
 
-        case "Z":
-        case "z":
+        case 'Z':
+        case 'z':
           // Close path - no new point
           break;
 
         // For curves, we'll just take the endpoint
-        case "C": // Cubic bezier absolute
+        case 'C': // Cubic bezier absolute
           for (let i = 0; i < params.length; i += 6) {
             if (i + 5 < params.length) {
               currentX = params[i + 4];
@@ -244,7 +244,7 @@ export class SvgParserService {
           }
           break;
 
-        case "c": // Cubic bezier relative
+        case 'c': // Cubic bezier relative
           for (let i = 0; i < params.length; i += 6) {
             if (i + 5 < params.length) {
               currentX += params[i + 4];
@@ -260,26 +260,26 @@ export class SvgParserService {
   }
 
   private isClosedPath(d: string): boolean {
-    return d.toLowerCase().includes("z");
+    return d.toLowerCase().includes('z');
   }
 
   private parseRectToShape(rectEl: Element, id: string): Shape | null {
-    const x = parseFloat(rectEl.getAttribute("x") || "0");
-    const y = parseFloat(rectEl.getAttribute("y") || "0");
-    const width = parseFloat(rectEl.getAttribute("width") || "0");
-    const height = parseFloat(rectEl.getAttribute("height") || "0");
+    const x = parseFloat(rectEl.getAttribute('x') || '0');
+    const y = parseFloat(rectEl.getAttribute('y') || '0');
+    const width = parseFloat(rectEl.getAttribute('width') || '0');
+    const height = parseFloat(rectEl.getAttribute('height') || '0');
 
     if (width === 0 || height === 0) return null;
 
     return {
       id,
-      type: "polygon",
+      type: 'polygon',
       x,
       y,
       rotation: 0,
       selected: false,
       locked: false,
-      layer: "slab",
+      layer: 'slab',
       points: [
         { x: 0, y: 0 },
         { x: width, y: 0 },
@@ -291,20 +291,20 @@ export class SvgParserService {
   }
 
   private parseLineToShape(lineEl: Element, id: string): Shape | null {
-    const x1 = parseFloat(lineEl.getAttribute("x1") || "0");
-    const y1 = parseFloat(lineEl.getAttribute("y1") || "0");
-    const x2 = parseFloat(lineEl.getAttribute("x2") || "0");
-    const y2 = parseFloat(lineEl.getAttribute("y2") || "0");
+    const x1 = parseFloat(lineEl.getAttribute('x1') || '0');
+    const y1 = parseFloat(lineEl.getAttribute('y1') || '0');
+    const x2 = parseFloat(lineEl.getAttribute('x2') || '0');
+    const y2 = parseFloat(lineEl.getAttribute('y2') || '0');
 
     return {
       id,
-      type: "polygon",
+      type: 'polygon',
       x: Math.min(x1, x2),
       y: Math.min(y1, y2),
       rotation: 0,
       selected: false,
       locked: false,
-      layer: "slab",
+      layer: 'slab',
       points: [
         { x: x1 - Math.min(x1, x2), y: y1 - Math.min(y1, y2) },
         { x: x2 - Math.min(x1, x2), y: y2 - Math.min(y1, y2) },
@@ -314,7 +314,7 @@ export class SvgParserService {
   }
 
   private parsePolygonToShape(polyEl: Element, id: string): Shape | null {
-    const pointsAttr = polyEl.getAttribute("points");
+    const pointsAttr = polyEl.getAttribute('points');
     if (!pointsAttr) return null;
 
     const points = this.parsePointsAttribute(pointsAttr);
@@ -327,20 +327,20 @@ export class SvgParserService {
 
     return {
       id,
-      type: "polygon",
+      type: 'polygon',
       x: minX,
       y: minY,
       rotation: 0,
       selected: false,
       locked: false,
-      layer: "slab",
+      layer: 'slab',
       points: points.map((p) => ({ x: p.x - minX, y: p.y - minY })),
       properties: { isFromSvg: true },
     } as Shape;
   }
 
   private parsePolylineToShape(polyEl: Element, id: string): Shape | null {
-    const pointsAttr = polyEl.getAttribute("points");
+    const pointsAttr = polyEl.getAttribute('points');
     if (!pointsAttr) return null;
 
     const points = this.parsePointsAttribute(pointsAttr);
@@ -353,13 +353,13 @@ export class SvgParserService {
 
     return {
       id,
-      type: "polygon",
+      type: 'polygon',
       x: minX,
       y: minY,
       rotation: 0,
       selected: false,
       locked: false,
-      layer: "slab",
+      layer: 'slab',
       points: points.map((p) => ({ x: p.x - minX, y: p.y - minY })),
       properties: { isFromSvg: true },
     } as Shape;

@@ -6,20 +6,7 @@ import { NavbarComponent } from "../navbar/navbar.component";
   selector: "app-shell",
   standalone: true,
   imports: [RouterOutlet, NavbarComponent],
-  template: `
-    <app-navbar />
-    <main class="main-content">
-      <router-outlet />
-    </main>
-  `,
-  styles: [
-    `
-      .main-content {
-        margin-top: 64px;
-        min-height: calc(100vh - 64px);
-        background: #f5f5f5;
-      }
-    `,
-  ],
+  templateUrl: "./app-shell.component.html",
+  styleUrl: "./app-shell.component.scss",
 })
 export class AppShellComponent {}

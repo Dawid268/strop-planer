@@ -1,0 +1,17 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: linear-gradient(135deg, #3f51b5 0%, #303f9f 100%);
+  border-radius: 0;
+}
+
+.nav-links ::ng-deep .active {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.user-info {
+  border-bottom: 1px solid var(--surface-border);
+}

@@ -1,6 +1,5 @@
-import { Injectable, inject, signal } from "@angular/core";
+import { Injectable, signal } from "@angular/core";
 import * as fabric from "fabric";
-import { EditorStore } from "../store/editor.store";
 import {
   CustomFabricObject,
   CANVAS_COLORS,
@@ -9,8 +8,6 @@ import {
 
 @Injectable()
 export class CanvasInteractionService {
-  private readonly store = inject(EditorStore);
-
   public readonly showContextToolbar = signal(false);
   public readonly contextToolbarPosition = signal<{
     x: number;

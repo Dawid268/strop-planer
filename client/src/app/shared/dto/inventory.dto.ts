@@ -82,29 +82,29 @@ export interface InventoryFilterDto {
 }
 
 export type InventoryItemType =
-  | "panel"
-  | "prop"
-  | "beam"
-  | "head"
-  | "tripod"
-  | "drophead"
-  | "accessory";
+  | 'panel'
+  | 'prop'
+  | 'beam'
+  | 'head'
+  | 'tripod'
+  | 'drophead'
+  | 'accessory';
 
-export type InventoryCondition = "nowy" | "dobry" | "używany" | "do_naprawy";
+export type InventoryCondition = 'nowy' | 'dobry' | 'używany' | 'do_naprawy';
 
 export const INVENTORY_ITEM_TYPES: readonly InventoryItemType[] = [
-  "panel",
-  "prop",
-  "beam",
-  "head",
-  "tripod",
-  "drophead",
-  "accessory",
+  'panel',
+  'prop',
+  'beam',
+  'head',
+  'tripod',
+  'drophead',
+  'accessory',
 ] as const;
 
 export const INVENTORY_CONDITIONS: readonly InventoryCondition[] = [
-  "nowy",
-  "dobry",
-  "używany",
-  "do_naprawy",
+  'nowy',
+  'dobry',
+  'używany',
+  'do_naprawy',
 ] as const;

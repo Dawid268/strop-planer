@@ -6,6 +6,7 @@ import {
   PLATFORM_ID,
   ChangeDetectorRef,
   DestroyRef,
+  isDevMode,
 } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
 import { DynamicDialogRef } from "primeng/dynamicdialog";
@@ -55,7 +56,7 @@ export class NewProjectDialogComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly project = signal<CreateProjectDto>({
-    name: "Projekt Poddasza (Auto)",
+    name: "",
     description: "",
     slabLength: 10,
     slabWidth: 10,
@@ -63,13 +64,10 @@ export class NewProjectDialogComponent {
     floorHeight: 3.0,
     slabType: "monolityczny",
     formworkSystem: "",
-    sourcePdfPath:
-      "/home/dawid/Dokumenty/projektkonstrukcji/rzut poddasza 02.2025.pdf",
+    sourcePdfPath: "",
   });
 
-  protected readonly selectedPdfFiles = signal<File[]>([
-    new File([""], "rzut poddasza 02.2025.pdf", { type: "application/pdf" }),
-  ]);
+  protected readonly selectedPdfFiles = signal<File[]>([]);
   protected readonly isUploading = signal(false);
   protected readonly isDragging = signal(false);
 
@@ -87,7 +85,24 @@ export class NewProjectDialogComponent {
     this.project.update((p) => ({ ...p, description }));
   }
 
-  constructor() {}
+  constructor() {
+    if (isDevMode() && isPlatformBrowser(this.platformId)) {
+      this.loadDevPdf();
+    }
+  }
+
+  private async loadDevPdf() {
+    try {
+      const response = await fetch("assets/strop-dev.pdf");
+      const blob = await response.blob();
+      const file = new File([blob], "strop-dev.pdf", {
+        type: "application/pdf",
+      });
+      this.handleFile(file);
+    } catch (e) {
+      console.warn("Could not load dev PDF", e);
+    }
+  }
 
   onDragOver(event: DragEvent) {
     event.preventDefault();
@@ -132,12 +147,15 @@ export class NewProjectDialogComponent {
       .uploadPdf(tempId, file)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res: any) => {
+        next: (res) => {
+          // res is ApiResponse<any>
+          const data = res.data;
           this.project.update((p) => ({
             ...p,
-            sourcePdfPath: res.paths?.pdf || res.sourceFile || p.sourcePdfPath,
-            dxfPath: res.paths?.dxf || p.dxfPath,
-            geoJsonPath: res.paths?.json || p.geoJsonPath,
+            sourcePdfPath:
+              data.paths?.pdf || data.sourceFile || p.sourcePdfPath,
+            dxfPath: data.paths?.dxf || p.dxfPath,
+            geoJsonPath: data.paths?.json || p.geoJsonPath,
           }));
           this.isUploading.set(false);
           this.cdr.detectChanges();
