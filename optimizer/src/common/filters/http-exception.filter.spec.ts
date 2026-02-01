@@ -6,7 +6,11 @@ import { AppError } from '@shared/errors/app-error';
 describe('HttpExceptionFilter', () => {
   let filter: HttpExceptionFilter;
   let mockResponse: { status: jest.Mock; json: jest.Mock };
-  let mockRequest: { headers: Record<string, string>; url: string; method: string };
+  let mockRequest: {
+    headers: Record<string, string>;
+    url: string;
+    method: string;
+  };
   let mockHost: ArgumentsHost;
 
   beforeEach(() => {
