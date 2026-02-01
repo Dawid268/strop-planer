@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -13,6 +13,7 @@ import 'winston-daily-rotate-file';
 import { join } from 'path';
 
 import { envValidationSchema, getDatabaseConfig } from '@config/index';
+import { CorrelationIdMiddleware } from '@common/middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PdfModule } from './pdf/pdf.module';
@@ -130,4 +131,11 @@ import { FloorPlanModule } from './floor-plan/floor-plan.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Configure middleware for all routes
+   */
+  public configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+  }
+}
