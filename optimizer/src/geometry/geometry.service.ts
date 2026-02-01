@@ -11,7 +11,7 @@ import { InkscapeConversionService } from './inkscape-conversion.service';
 const execAsync = promisify(exec);
 
 /**
- * Polygon structure returned by Python extraction script v2.0
+ * Polygon structure returned by Python extraction script v2.1
  */
 interface ExtractedPolygon {
   points: Array<{ x: number; y: number }>;
@@ -19,6 +19,18 @@ interface ExtractedPolygon {
   perimeter: number;
   is_hole: boolean;
   point_count: number;
+  real_area_m2?: number;
+  real_perimeter_m?: number;
+}
+
+/**
+ * Scale detection result
+ */
+interface ScaleInfo {
+  scale: number;
+  source: 'text' | 'metadata' | 'dimension_analysis' | 'default';
+  confidence: number;
+  units: 'mm' | 'cm' | 'm';
 }
 
 /**
@@ -31,16 +43,18 @@ interface ExtractionMetadata {
   segmentCount: number;
   polygonCount: number;
   holeCount: number;
+  textElementsFound?: number;
   version: string;
 }
 
 /**
- * Full result from Python geometry extraction script v2.0
+ * Full result from Python geometry extraction script v2.1
  */
 interface GeometryExtractionResult {
   polygons?: ExtractedPolygon[];
   holes?: ExtractedPolygon[];
   segments?: Array<Array<{ x: number; y: number }>>;
+  scale?: ScaleInfo;
   metadata?: ExtractionMetadata;
   error?: string;
   trace?: string;
@@ -192,6 +206,8 @@ export class GeometryService {
                 points: poly.points,
                 area: poly.area,
                 perimeter: poly.perimeter,
+                realAreaM2: poly.real_area_m2,
+                realPerimeterM: poly.real_perimeter_m,
                 isHole: false,
                 x: 0,
                 y: 0,
@@ -204,6 +220,8 @@ export class GeometryService {
                 points: hole.points,
                 area: hole.area,
                 perimeter: hole.perimeter,
+                realAreaM2: hole.real_area_m2,
+                realPerimeterM: hole.real_perimeter_m,
                 isHole: true,
                 x: 0,
                 y: 0,
@@ -250,6 +268,7 @@ export class GeometryService {
                   },
                 ],
                 metadata: result.metadata,
+                scale: result.scale,
               };
 
               await this.projectRepository.update(projectId, {
@@ -259,15 +278,26 @@ export class GeometryService {
               });
               const polygonCount = result.polygons?.length ?? 0;
               const holeCount = result.holes?.length ?? 0;
+              const scaleInfo = result.scale;
+
               this.logger.log(
                 `Extracted ${polygonCount} boundaries, ${holeCount} holes.`,
               );
-              if (polygonCount > 0 && result.polygons) {
-                const firstPoly = result.polygons[0];
+
+              if (scaleInfo) {
                 this.logger.log(
-                  `First polygon: ${firstPoly.point_count} points, area: ${firstPoly.area.toFixed(2)}`,
+                  `Scale detected: 1:${scaleInfo.scale} (${scaleInfo.source}, confidence: ${scaleInfo.confidence}%)`,
                 );
               }
+
+              if (polygonCount > 0 && result.polygons) {
+                const firstPoly = result.polygons[0];
+                const realArea = firstPoly.real_area_m2?.toFixed(2) ?? 'N/A';
+                this.logger.log(
+                  `First polygon: ${firstPoly.point_count} points, area: ${realArea} m²`,
+                );
+              }
+
               this.logger.log(`Updated project ${projectId} with geometry`);
 
               this.updateJob(jobId, {
