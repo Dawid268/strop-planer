@@ -14,7 +14,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { AtGuard } from '../auth/auth.guard';
+import { JwtGuard } from '../auth/guards';
 import {
   IsString,
   IsNumber,
@@ -81,7 +81,7 @@ class CalculateRequestDto {
 
 @ApiTags('Formwork')
 @ApiBearerAuth()
-@UseGuards(AtGuard)
+@UseGuards(JwtGuard)
 @Controller({ version: '1', path: 'formwork' })
 export class FormworkController {
   private readonly layouts: Map<string, FormworkLayout> = new Map();

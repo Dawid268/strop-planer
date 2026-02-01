@@ -1,42 +1,63 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from '../inventory/entities/user.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { AtStrategy } from './at.strategy';
 import { ConfigService } from '@nestjs/config';
-import { RtStrategy } from './rt.strategy';
-import { LocalStrategy } from './local.strategy';
-import { AtGuard, RtGuard, LocalAuthGuard } from './auth.guard';
+
+import { UserEntity } from '../inventory/entities/user.entity';
 import { AUTH_CONSTANTS } from './constants/auth.constants';
 
+// Services
+import { AuthService } from './services/auth.service';
+
+// Controllers
+import { AuthController } from './controllers/auth.controller';
+
+// Strategies
+import { JwtStrategy, JwtRefreshStrategy, LocalStrategy } from './strategies';
+
+// Guards
+import { JwtGuard, JwtRefreshGuard, LocalGuard } from './guards';
+
+// Profiles
 import { AuthProfile } from './profiles/auth.profile';
 
+/**
+ * Authentication Module
+ * Provides JWT-based authentication with access and refresh tokens
+ */
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity]),
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>(AUTH_CONSTANTS.CONFIG.JWT_SECRET),
-        signOptions: { expiresIn: '15m' },
+        signOptions: {
+          expiresIn: AUTH_CONSTANTS.DEFAULTS.ACCESS_TOKEN_EXPIRY,
+        },
       }),
       inject: [ConfigService],
     }),
   ],
-  providers: [
-    AuthService,
-    LocalStrategy,
-    AtStrategy,
-    RtStrategy,
-    AuthProfile,
-    AtGuard,
-    RtGuard,
-    LocalAuthGuard,
-  ],
   controllers: [AuthController],
-  exports: [AuthService, AtGuard, RtGuard, LocalAuthGuard],
+  providers: [
+    // Services
+    AuthService,
+
+    // Strategies
+    JwtStrategy,
+    JwtRefreshStrategy,
+    LocalStrategy,
+
+    // Guards
+    JwtGuard,
+    JwtRefreshGuard,
+    LocalGuard,
+
+    // Profiles
+    AuthProfile,
+  ],
+  exports: [AuthService, JwtGuard, JwtRefreshGuard, LocalGuard],
 })
 export class AuthModule {}

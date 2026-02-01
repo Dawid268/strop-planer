@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AtStrategy } from './at.strategy';
 import { ConfigService } from '@nestjs/config';
+import { JwtStrategy, JwtPayload, JwtUser } from './jwt.strategy';
 
-describe('AtStrategy', () => {
-  let strategy: AtStrategy;
+describe('JwtStrategy', () => {
+  let strategy: JwtStrategy;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AtStrategy,
+        JwtStrategy,
         {
           provide: ConfigService,
           useValue: {
@@ -18,7 +18,7 @@ describe('AtStrategy', () => {
       ],
     }).compile();
 
-    strategy = module.get<AtStrategy>(AtStrategy);
+    strategy = module.get<JwtStrategy>(JwtStrategy);
   });
 
   it('should be defined', () => {
@@ -27,13 +27,13 @@ describe('AtStrategy', () => {
 
   describe('validate', () => {
     it('should return user data from JWT payload', () => {
-      const payload = {
+      const payload: JwtPayload = {
         sub: 'user-123',
         email: 'test@example.com',
         role: 'admin',
       };
 
-      const result = strategy.validate(payload);
+      const result: JwtUser = strategy.validate(payload);
 
       expect(result).toEqual({
         userId: 'user-123',

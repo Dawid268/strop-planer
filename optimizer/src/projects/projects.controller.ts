@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { ProjectsService } from '@/projects/projects.service';
 import { FormworkService } from '@/formwork/formwork.service';
-import { AtGuard } from '@/auth/auth.guard';
+import { JwtGuard } from '@/auth/guards';
 import {
   CreateProjectDto,
   UpdateProjectDto,
@@ -43,7 +43,7 @@ import {
 
 @ApiTags('Projects')
 @ApiBearerAuth()
-@UseGuards(AtGuard)
+@UseGuards(JwtGuard)
 @Controller({ version: '1', path: 'projects' })
 export class ProjectsController {
   public constructor(

@@ -2,41 +2,46 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { LocalStrategy } from './local.strategy';
-import { AuthService } from './auth.service';
-import { UserDto } from './dto/auth.dto';
+import { AuthService } from '../services/auth.service';
+import { UserDto } from '../dto/auth.dto';
 
 describe('LocalStrategy', () => {
   let strategy: LocalStrategy;
-  let authService: AuthService;
+  let authService: jest.Mocked<AuthService>;
 
   const mockUser: UserDto = {
     id: 'user-123',
     email: 'test@example.com',
-    firstName: 'Test',
-    lastName: 'User',
-  };
-
-  const mockAuthService = {
-    validateUser: jest.fn(),
+    name: 'Test User',
+    companyName: 'Test Company',
+    role: 'admin',
+    isActive: true,
   };
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LocalStrategy,
-        { provide: AuthService, useValue: mockAuthService },
+        {
+          provide: AuthService,
+          useValue: {
+            validateUser: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     strategy = module.get<LocalStrategy>(LocalStrategy);
-    authService = module.get<AuthService>(AuthService);
+    authService = module.get(AuthService);
+  });
+
+  it('should be defined', () => {
+    expect(strategy).toBeDefined();
   });
 
   describe('validate', () => {
     it('should return user when credentials are valid', async () => {
-      mockAuthService.validateUser.mockResolvedValue(mockUser);
+      authService.validateUser.mockResolvedValue(mockUser);
 
       const result = await strategy.validate('test@example.com', 'password123');
 
@@ -47,19 +52,11 @@ describe('LocalStrategy', () => {
       );
     });
 
-    it('should throw UnauthorizedException when user is not found', async () => {
-      mockAuthService.validateUser.mockResolvedValue(null);
+    it('should throw UnauthorizedException when credentials are invalid', async () => {
+      authService.validateUser.mockResolvedValue(null);
 
       await expect(
-        strategy.validate('invalid@example.com', 'password'),
-      ).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should throw UnauthorizedException when password is wrong', async () => {
-      mockAuthService.validateUser.mockResolvedValue(null);
-
-      await expect(
-        strategy.validate('test@example.com', 'wrongpassword'),
+        strategy.validate('test@example.com', 'wrong-password'),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

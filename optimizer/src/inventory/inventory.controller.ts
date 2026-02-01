@@ -18,7 +18,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service';
-import { AtGuard } from '../auth/auth.guard';
+import { JwtGuard } from '../auth/guards';
 import {
   CreateInventoryItemDto,
   UpdateInventoryItemDto,
@@ -33,7 +33,7 @@ import {
 
 @ApiTags('Inventory')
 @ApiBearerAuth()
-@UseGuards(AtGuard)
+@UseGuards(JwtGuard)
 @Controller({ version: '1', path: 'inventory' })
 export class InventoryController {
   public constructor(private readonly inventoryService: InventoryService) {}
