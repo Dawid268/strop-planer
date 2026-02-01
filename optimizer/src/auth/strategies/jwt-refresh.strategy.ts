@@ -3,16 +3,22 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AUTH_CONSTANTS } from './constants/auth.constants';
+import { AUTH_CONSTANTS } from '../constants/auth.constants';
+import { JwtPayload } from './jwt.strategy';
 
-interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
+/**
+ * Refresh token user with token attached
+ */
+export interface RefreshTokenUser extends JwtPayload {
+  refreshToken: string;
 }
 
+/**
+ * JWT Refresh Token Strategy
+ * Validates refresh tokens and extracts the token for verification
+ */
 @Injectable()
-export class RtStrategy extends PassportStrategy(
+export class JwtRefreshStrategy extends PassportStrategy(
   Strategy,
   AUTH_CONSTANTS.STRATEGIES.JWT_REFRESH,
 ) {
@@ -26,10 +32,10 @@ export class RtStrategy extends PassportStrategy(
     });
   }
 
-  public validate(
-    req: Request,
-    payload: JwtPayload,
-  ): JwtPayload & { refreshToken: string } {
+  /**
+   * Validate refresh token and attach it to the user
+   */
+  public validate(req: Request, payload: JwtPayload): RefreshTokenUser {
     const refreshToken = req.get('authorization')?.replace('Bearer', '').trim();
 
     if (!refreshToken) {
