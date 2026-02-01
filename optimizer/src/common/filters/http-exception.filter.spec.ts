@@ -6,6 +6,7 @@ import { AppError } from '@shared/errors/app-error';
 describe('HttpExceptionFilter', () => {
   let filter: HttpExceptionFilter;
   let mockResponse: { status: jest.Mock; json: jest.Mock };
+  let mockRequest: { headers: Record<string, string>; url: string; method: string };
   let mockHost: ArgumentsHost;
 
   beforeEach(() => {
@@ -14,10 +15,15 @@ describe('HttpExceptionFilter', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+    mockRequest = {
+      headers: { 'x-correlation-id': 'test-correlation-id' },
+      url: '/test',
+      method: 'GET',
+    };
     mockHost = {
       switchToHttp: jest.fn().mockReturnValue({
         getResponse: () => mockResponse,
-        getRequest: () => ({}),
+        getRequest: () => mockRequest,
       }),
     } as unknown as ArgumentsHost;
   });
@@ -54,7 +60,8 @@ describe('HttpExceptionFilter', () => {
       expect.objectContaining({
         success: false,
         error: expect.objectContaining({
-          code: 'HTTP_EXCEPTION',
+          code: 'NOT_FOUND',
+          correlationId: 'test-correlation-id',
         }),
       }),
     );
@@ -85,13 +92,14 @@ describe('HttpExceptionFilter', () => {
         success: false,
         error: expect.objectContaining({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Something went wrong',
+          message: 'An unexpected error occurred',
+          correlationId: 'test-correlation-id',
         }),
       }),
     );
   });
 
-  it('should include timestamp in response', () => {
+  it('should include timestamp and correlationId in response', () => {
     const error = new Error('Test');
 
     filter.catch(error, mockHost);
@@ -100,6 +108,7 @@ describe('HttpExceptionFilter', () => {
       expect.objectContaining({
         error: expect.objectContaining({
           timestamp: expect.any(String),
+          correlationId: 'test-correlation-id',
         }),
       }),
     );
