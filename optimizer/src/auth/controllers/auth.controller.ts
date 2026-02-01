@@ -52,10 +52,25 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Throttle({ short: { limit: 5, ttl: 60000 } })
-  @ApiOperation({ summary: 'Zaloguj się (email/hasło)' })
+  @ApiOperation({
+    summary: 'Zaloguj się',
+    description:
+      'Uwierzytelnia użytkownika za pomocą email i hasła. Zwraca access token (15 min) i refresh token (7 dni).',
+  })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({ status: 200, type: TokenResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many login attempts' })
+  @ApiResponse({
+    status: 200,
+    description: 'Logowanie pomyślne',
+    type: TokenResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Nieprawidłowy email lub hasło',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Zbyt wiele prób logowania (max 5/min)',
+  })
   public async login(
     @Request() req: AuthenticatedRequest,
   ): Promise<TokenResponseDto> {
@@ -69,8 +84,19 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Wyloguj użytkownika' })
-  @ApiResponse({ status: 200, description: 'Successfully logged out' })
+  @ApiOperation({
+    summary: 'Wyloguj',
+    description:
+      'Unieważnia refresh token użytkownika. Wymaga ważnego access tokenu.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Wylogowano pomyślnie',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Brak autoryzacji - wymagany token JWT',
+  })
   public async logout(@GetCurrentUserId() userId: string): Promise<void> {
     return this.authService.logout(userId);
   }
@@ -83,8 +109,24 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Odśwież tokeny' })
-  @ApiResponse({ status: 200, type: TokenResponseDto })
+  @ApiOperation({
+    summary: 'Odśwież tokeny',
+    description:
+      'Generuje nową parę tokenów (access + refresh) używając refresh tokenu. Stary refresh token zostaje unieważniony.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokeny odświeżone pomyślnie',
+    type: TokenResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Nieprawidłowy lub wygasły refresh token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Refresh token niezgodny z zapisanym',
+  })
   public async refreshTokens(
     @GetCurrentUserId() userId: string,
     @GetCurrentUser('refreshToken') refreshToken: string,
@@ -97,10 +139,31 @@ export class AuthController {
    */
   @Public()
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   @Throttle({ short: { limit: 3, ttl: 60000 } })
-  @ApiOperation({ summary: 'Zarejestruj nowe konto' })
-  @ApiResponse({ status: 201, type: UserDto })
-  @ApiResponse({ status: 429, description: 'Too many registration attempts' })
+  @ApiOperation({
+    summary: 'Rejestracja',
+    description:
+      'Tworzy nowe konto użytkownika. Email musi być unikalny. Hasło musi mieć min. 8 znaków.',
+  })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Konto utworzone pomyślnie',
+    type: UserDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Błędne dane wejściowe (np. za krótkie hasło)',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email jest już zarejestrowany',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Zbyt wiele prób rejestracji (max 3/min)',
+  })
   public async register(@Body() dto: RegisterDto): Promise<UserDto> {
     return this.authService.register(dto);
   }
@@ -111,8 +174,19 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @Get('profile')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Pobierz profil zalogowanego użytkownika' })
-  @ApiResponse({ status: 200, type: UserDto })
+  @ApiOperation({
+    summary: 'Profil użytkownika',
+    description: 'Zwraca dane profilu zalogowanego użytkownika.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dane profilu',
+    type: UserDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Brak autoryzacji - wymagany token JWT',
+  })
   public getProfile(@GetCurrentUser() user: UserDto): UserDto {
     return user;
   }

@@ -3,16 +3,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
-import { WinstonModule } from 'nest-winston';
+import { LoggerModule } from 'nestjs-pino';
 import { AutomapperModule } from '@automapper/nestjs';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { classes } from '@automapper/classes';
-import * as winston from 'winston';
-import 'winston-daily-rotate-file';
 import { join } from 'path';
 
-import { envValidationSchema, getDatabaseConfig } from '@config/index';
+import {
+  envValidationSchema,
+  getDatabaseConfig,
+  getLoggerConfig,
+} from '@config/index';
 import { CorrelationIdMiddleware } from '@common/middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -53,43 +55,10 @@ import { FloorPlanModule } from './floor-plan/floor-plan.module';
         limit: 1000, // 1000 requests per hour
       },
     ]),
-    WinstonModule.forRootAsync({
+    // Structured logging with Pino
+    LoggerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const logLevel = configService.get<string>('LOG_LEVEL') ?? 'info';
-        return {
-          transports: [
-            new winston.transports.Console({
-              level: logLevel,
-              format: winston.format.combine(
-                winston.format.timestamp(),
-                winston.format.ms(),
-                winston.format.colorize(),
-                winston.format.printf((info) => {
-                  const { timestamp, level, message, context, ms } = info;
-                  const ctx = typeof context === 'string' ? context : 'App';
-                  const ts = typeof timestamp === 'string' ? timestamp : '';
-                  const lvl = typeof level === 'string' ? level : '';
-                  const msg = typeof message === 'string' ? message : '';
-                  const msec = typeof ms === 'string' ? ms : '';
-                  return `[Nest] ${ts} ${lvl} [${ctx}] ${msg} ${msec}`;
-                }),
-              ),
-            }),
-            new winston.transports.DailyRotateFile({
-              filename: 'logs/application-%DATE%.log',
-              datePattern: 'YYYY-MM-DD',
-              zippedArchive: true,
-              maxSize: '20m',
-              maxFiles: '14d',
-              format: winston.format.combine(
-                winston.format.timestamp(),
-                winston.format.json(),
-              ),
-            }),
-          ],
-        };
-      },
+      useFactory: getLoggerConfig,
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     TypeOrmModule.forRootAsync({

@@ -9,6 +9,9 @@ import {
   UseGuards,
   BadRequestException,
   Query,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,7 +19,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
+
 import { ProjectsService } from '@/projects/projects.service';
 import { FormworkService } from '@/formwork/formwork.service';
 import { JwtGuard } from '@/auth/guards';
@@ -41,6 +47,10 @@ import {
   ExtractedSlabGeometry,
 } from './interfaces/project.interface';
 
+/**
+ * Projects Controller
+ * Manages formwork calculation projects for authenticated users
+ */
 @ApiTags('Projects')
 @ApiBearerAuth()
 @UseGuards(JwtGuard)
@@ -51,13 +61,38 @@ export class ProjectsController {
     private readonly formworkService: FormworkService,
   ) {}
 
+  /**
+   * Get all projects with pagination
+   */
   @Get()
   @ApiOperation({
-    summary: 'Lista wszystkich projektów użytkownika (z paginacją)',
+    summary: 'Lista projektów użytkownika',
+    description:
+      'Zwraca paginowaną listę wszystkich projektów należących do zalogowanego użytkownika.',
   })
-  @ApiResponse({ status: 200, type: [ProjectResponseDto] })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Numer strony (domyślnie: 1)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Liczba elementów na stronę (domyślnie: 20, max: 100)',
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista projektów z metadanymi paginacji',
+    type: [ProjectResponseDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Brak autoryzacji - wymagany token JWT',
+  })
   public async getProjects(
     @GetCurrentUserId() userId: string,
     @Query() pagination: PaginationQueryDto,
@@ -82,26 +117,80 @@ export class ProjectsController {
     };
   }
 
+  /**
+   * Get project statistics
+   */
   @Get('stats')
-  @ApiOperation({ summary: 'Statystyki projektów użytkownika' })
+  @ApiOperation({
+    summary: 'Statystyki projektów',
+    description:
+      'Zwraca zagregowane statystyki wszystkich projektów użytkownika.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statystyki projektów',
+    schema: {
+      type: 'object',
+      properties: {
+        totalProjects: { type: 'number', example: 15 },
+        completedProjects: { type: 'number', example: 8 },
+        inProgressProjects: { type: 'number', example: 5 },
+        draftProjects: { type: 'number', example: 2 },
+        totalSlabArea: { type: 'number', example: 1250.5 },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
   public async getStats(@GetCurrentUserId() userId: string) {
     return this.projectsService.getStats(userId);
   }
 
+  /**
+   * Get single project by ID
+   */
   @Get(':id')
-  @ApiOperation({ summary: 'Pobierz projekt po ID' })
-  @ApiResponse({ status: 200, type: ProjectResponseDto })
+  @ApiOperation({
+    summary: 'Pobierz projekt',
+    description: 'Zwraca szczegóły projektu o podanym ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID projektu',
+    type: String,
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Szczegóły projektu',
+    type: ProjectResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
   public async getProjectById(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @GetCurrentUserId() userId: string,
   ): Promise<ProjectResponseDto> {
     const project = await this.projectsService.findOne(id, userId);
     return this.mapToResponse(project);
   }
 
+  /**
+   * Create new project
+   */
   @Post()
-  @ApiOperation({ summary: 'Utwórz nowy projekt' })
-  @ApiResponse({ status: 201, type: ProjectResponseDto })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Utwórz projekt',
+    description: 'Tworzy nowy projekt szalunkowy z podanymi parametrami.',
+  })
+  @ApiBody({ type: CreateProjectDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Projekt utworzony pomyślnie',
+    type: ProjectResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Błędne dane wejściowe' })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
   public async createProject(
     @Body() dto: CreateProjectDto,
     @GetCurrentUserId() userId: string,
@@ -110,11 +199,30 @@ export class ProjectsController {
     return this.mapToResponse(project);
   }
 
+  /**
+   * Update existing project
+   */
   @Put(':id')
-  @ApiOperation({ summary: 'Aktualizuj projekt' })
-  @ApiResponse({ status: 200, type: ProjectResponseDto })
+  @ApiOperation({
+    summary: 'Aktualizuj projekt',
+    description: 'Aktualizuje istniejący projekt o podanym ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID projektu do aktualizacji',
+    type: String,
+  })
+  @ApiBody({ type: UpdateProjectDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Projekt zaktualizowany',
+    type: ProjectResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Błędne dane wejściowe' })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
   public async updateProject(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProjectDto,
     @GetCurrentUserId() userId: string,
   ): Promise<ProjectResponseDto> {
@@ -122,21 +230,68 @@ export class ProjectsController {
     return this.mapToResponse(project);
   }
 
+  /**
+   * Delete project
+   */
   @Delete(':id')
-  @ApiOperation({ summary: 'Usuń projekt' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Usuń projekt',
+    description: 'Trwale usuwa projekt o podanym ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID projektu do usunięcia',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Projekt usunięty',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Projekt 550e8400-... usunięty' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
   public async deleteProject(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @GetCurrentUserId() userId: string,
   ): Promise<{ message: string }> {
     await this.projectsService.delete(id, userId);
     return { message: `Projekt ${id} usunięty` };
   }
 
+  /**
+   * Trigger formwork calculation for project
+   */
   @Post(':id/calculate')
-  @ApiOperation({ summary: 'Uruchom obliczenia szalunku dla projektu' })
-  @ApiResponse({ status: 200, type: ProjectResponseDto })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Oblicz szalunek',
+    description:
+      'Uruchamia obliczenia szalunkowe dla projektu. Wymaga uzupełnionych wymiarów stropu.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'UUID projektu',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Obliczenia zakończone pomyślnie',
+    type: ProjectResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Brak wymaganych wymiarów stropu',
+  })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
   public async triggerCalculation(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @GetCurrentUserId() userId: string,
   ): Promise<ProjectResponseDto> {
     const project = await this.projectsService.findOne(id, userId);
@@ -192,6 +347,149 @@ export class ProjectsController {
     return this.mapToResponse(updatedProject);
   }
 
+  /**
+   * Save calculation result
+   */
+  @Post(':id/calculation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Zapisz wynik obliczeń',
+    description: 'Zapisuje wynik obliczeń szalunkowych dla projektu.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID projektu', type: String })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        result: { type: 'object', description: 'Wynik obliczeń szalunkowych' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Wynik zapisany' })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
+  public async saveCalculation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('result') result: unknown,
+    @GetCurrentUserId() userId: string,
+  ) {
+    return this.projectsService.saveCalculationResult(
+      id,
+      userId,
+      JSON.stringify(result),
+    );
+  }
+
+  /**
+   * Save optimization result
+   */
+  @Post(':id/optimization')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Zapisz wynik optymalizacji',
+    description: 'Zapisuje wynik optymalizacji układu szalunkowego.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID projektu', type: String })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        result: { type: 'object', description: 'Wynik optymalizacji' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Wynik zapisany' })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
+  public async saveOptimization(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('result') result: unknown,
+    @GetCurrentUserId() userId: string,
+  ) {
+    return this.projectsService.saveOptimizationResult(
+      id,
+      userId,
+      JSON.stringify(result),
+    );
+  }
+
+  /**
+   * Get editor data
+   */
+  @Get(':id/editor-data')
+  @ApiOperation({
+    summary: 'Pobierz dane edytora',
+    description: 'Zwraca dane graficznego edytora (warstwy, kształty).',
+  })
+  @ApiParam({ name: 'id', description: 'UUID projektu', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Dane edytora',
+    schema: {
+      type: 'object',
+      properties: {
+        layers: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              visible: { type: 'boolean' },
+              shapes: { type: 'array', items: { type: 'object' } },
+            },
+          },
+        },
+        selectedLayerId: { type: 'string', nullable: true },
+        metadata: { type: 'object', nullable: true },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
+  public async getEditorData(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetCurrentUserId() userId: string,
+  ): Promise<EditorData | null> {
+    const project = await this.projectsService.findOne(id, userId);
+    return project.editorData
+      ? (JSON.parse(project.editorData) as EditorData)
+      : null;
+  }
+
+  /**
+   * Save editor data
+   */
+  @Put(':id/editor-data')
+  @ApiOperation({
+    summary: 'Zapisz dane edytora',
+    description: 'Zapisuje dane graficznego edytora projektu.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID projektu', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Dane edytora zapisane',
+    type: ProjectResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Błędne dane wejściowe' })
+  @ApiResponse({ status: 401, description: 'Brak autoryzacji' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
+  public async saveEditorData(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() data: EditorData,
+    @GetCurrentUserId() userId: string,
+  ): Promise<ProjectResponseDto> {
+    const project = await this.projectsService.update(
+      id,
+      { editorData: JSON.stringify(data) },
+      userId,
+    );
+    return this.mapToResponse(project);
+  }
+
+  /**
+   * Map entity to response DTO
+   */
   private mapToResponse(p: FormworkProjectEntity): ProjectResponseDto {
     return {
       id: p.id,
@@ -226,60 +524,5 @@ export class ProjectsController {
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
     };
-  }
-
-  @Post(':id/calculation')
-  @ApiOperation({ summary: 'Zapisz wynik obliczeń szalunku' })
-  public async saveCalculation(
-    @Param('id') id: string,
-    @Body('result') result: unknown,
-    @GetCurrentUserId() userId: string,
-  ) {
-    return this.projectsService.saveCalculationResult(
-      id,
-      userId,
-      JSON.stringify(result),
-    );
-  }
-
-  @Post(':id/optimization')
-  @ApiOperation({ summary: 'Zapisz wynik optymalizacji' })
-  public async saveOptimization(
-    @Param('id') id: string,
-    @Body('result') result: unknown,
-    @GetCurrentUserId() userId: string,
-  ) {
-    return this.projectsService.saveOptimizationResult(
-      id,
-      userId,
-      JSON.stringify(result),
-    );
-  }
-
-  @Get(':id/editor-data')
-  @ApiOperation({ summary: 'Pobierz dane edytora (karty, warstwy)' })
-  public async getEditorData(
-    @Param('id') id: string,
-    @GetCurrentUserId() userId: string,
-  ): Promise<EditorData | null> {
-    const project = await this.projectsService.findOne(id, userId);
-    return project.editorData
-      ? (JSON.parse(project.editorData) as EditorData)
-      : null;
-  }
-
-  @Put(':id/editor-data')
-  @ApiOperation({ summary: 'Zapisz dane edytora (karty, warstwy)' })
-  public async saveEditorData(
-    @Param('id') id: string,
-    @Body() data: EditorData,
-    @GetCurrentUserId() userId: string,
-  ): Promise<ProjectResponseDto> {
-    const project = await this.projectsService.update(
-      id,
-      { editorData: JSON.stringify(data) },
-      userId,
-    );
-    return this.mapToResponse(project);
   }
 }

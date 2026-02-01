@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe, LoggerService, VersioningType } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
@@ -14,9 +14,10 @@ import { API_CONFIG, APP_CONFIG } from '@common/constants';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const configService = app.get(ConfigService<EnvironmentVariables>);
-  const logger = app.get<LoggerService>(WINSTON_MODULE_NEST_PROVIDER);
+  const logger = app.get(Logger);
 
   app.useLogger(logger);
+  app.flushLogs();
 
   // Security: Helmet middleware for HTTP headers protection
   app.use(
