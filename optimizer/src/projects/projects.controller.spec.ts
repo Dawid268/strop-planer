@@ -6,6 +6,7 @@ import { FormworkService } from '../formwork/formwork.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { FormworkProjectEntity } from '../inventory/entities/formwork-project.entity';
 import { EditorData } from './interfaces/project.interface';
+import { SlabType } from '../slab/enums/slab.enums';
 
 describe('ProjectsController', () => {
   let controller: ProjectsController;
@@ -23,7 +24,7 @@ describe('ProjectsController', () => {
     slabWidth: 8,
     slabThickness: 0.25,
     floorHeight: 3,
-    slabType: 'monolityczny',
+    slabType: SlabType.MONOLITHIC,
     formworkSystem: 'PERI_SKYDECK',
     createdAt: new Date(),
     updatedAt: new Date(),

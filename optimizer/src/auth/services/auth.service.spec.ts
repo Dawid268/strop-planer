@@ -21,12 +21,12 @@ describe('AuthService', () => {
   const mockUser: UserEntity = {
     id: 'user-123',
     email: 'test@example.com',
-    name: 'Test User',
     passwordHash: 'hashed-password',
     companyName: 'Test Company',
     role: 'admin',
     isActive: true,
     hashedRt: null,
+    projects: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -34,7 +34,6 @@ describe('AuthService', () => {
   const mockUserDto: UserDto = {
     id: 'user-123',
     email: 'test@example.com',
-    name: 'Test User',
     companyName: 'Test Company',
     role: 'admin',
     isActive: true,

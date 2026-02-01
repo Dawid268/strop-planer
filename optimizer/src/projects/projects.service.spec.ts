@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { FormworkProjectEntity } from '../inventory/entities/formwork-project.entity';
-import { Repository } from 'typeorm';
+import { SlabType } from '../slab/enums/slab.enums';
 
 /**
  * Black-box tests for ProjectsService
@@ -11,10 +11,14 @@ import { Repository } from 'typeorm';
  */
 describe('ProjectsService', () => {
   let service: ProjectsService;
-  let mockRepository: Record<
-    keyof Repository<FormworkProjectEntity>,
-    jest.Mock
-  >;
+  let mockRepository: {
+    find: jest.Mock;
+    findOne: jest.Mock;
+    findAndCount: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+    remove: jest.Mock;
+  };
 
   const mockUserId = 'user-123';
   const mockProjectId = 'project-456';
@@ -28,7 +32,7 @@ describe('ProjectsService', () => {
     slabWidth: 8,
     slabThickness: 0.25,
     floorHeight: 3.0,
-    slabType: 'monolityczny',
+    slabType: SlabType.MONOLITHIC,
     userId: mockUserId,
     createdAt: new Date(),
     updatedAt: new Date(),

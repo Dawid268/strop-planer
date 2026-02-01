@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FormworkService } from './formwork.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { InventoryItemEntity } from '../inventory/entities/inventory-item.entity';
+import { SlabType } from '../slab/enums/slab.enums';
+import { ItemType } from '../inventory/enums/inventory.enums';
 
 /**
  * Black-box tests for FormworkService
@@ -14,7 +16,7 @@ describe('FormworkService', () => {
   const mockSlabData = {
     id: 'slab-123',
     dimensions: { length: 10, width: 8, thickness: 0.25, area: 80 },
-    type: 'monolityczny' as const,
+    type: SlabType.MONOLITHIC,
     beams: [],
     reinforcement: [],
     axes: { horizontal: [], vertical: [] },
@@ -48,7 +50,7 @@ describe('FormworkService', () => {
     {
       id: 'panel-1',
       catalogCode: 'PERI-SKY-150x75',
-      type: 'panel',
+      type: ItemType.PANEL,
       system: 'PERI_SKYDECK',
       dimensionLength: 150,
       dimensionWidth: 75,
@@ -56,13 +58,12 @@ describe('FormworkService', () => {
       loadCapacity: 15000,
       dailyRentPrice: 2.5,
       quantityAvailable: 100,
-      quantityTotal: 100,
       isActive: true,
     },
     {
       id: 'panel-2',
       catalogCode: 'PERI-SKY-120x60',
-      type: 'panel',
+      type: ItemType.PANEL,
       system: 'PERI_SKYDECK',
       dimensionLength: 120,
       dimensionWidth: 60,
@@ -70,33 +71,30 @@ describe('FormworkService', () => {
       loadCapacity: 12000,
       dailyRentPrice: 2.0,
       quantityAvailable: 50,
-      quantityTotal: 50,
       isActive: true,
     },
     {
       id: 'prop-1',
       catalogCode: 'EURO-STEMPEL-300',
-      type: 'prop',
+      type: ItemType.PROP,
       system: 'PERI_SKYDECK',
       dimensionHeight: 350,
       weight: 15,
       loadCapacity: 20000,
       dailyRentPrice: 0.8,
       quantityAvailable: 200,
-      quantityTotal: 200,
       isActive: true,
     },
     {
       id: 'beam-1',
       catalogCode: 'H20-240',
-      type: 'beam',
+      type: ItemType.BEAM,
       system: 'PERI_SKYDECK',
       dimensionLength: 240,
       weight: 8.4,
       loadCapacity: 6000,
       dailyRentPrice: 1.2,
       quantityAvailable: 80,
-      quantityTotal: 80,
       isActive: true,
     },
   ];
@@ -105,7 +103,7 @@ describe('FormworkService', () => {
     {
       id: 'doka-panel-1',
       catalogCode: 'DOKA-FLEX-200x50',
-      type: 'panel',
+      type: ItemType.PANEL,
       system: 'DOKA_DOKAFLEX',
       dimensionLength: 200,
       dimensionWidth: 50,
@@ -113,7 +111,6 @@ describe('FormworkService', () => {
       loadCapacity: 10000,
       dailyRentPrice: 2.2,
       quantityAvailable: 60,
-      quantityTotal: 60,
       isActive: true,
     },
   ];
@@ -236,7 +233,7 @@ describe('FormworkService', () => {
     it('should return array of alternative layouts', async () => {
       const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const alternatives = await service.generateAlternatives(layout);
+      const alternatives = await service['generateAlternatives'](layout);
 
       expect(alternatives).toBeInstanceOf(Array);
     });
@@ -244,7 +241,7 @@ describe('FormworkService', () => {
     it('should return layouts with different systems', async () => {
       const layout = await service.calculateFormwork(mockSlabData, mockParams);
 
-      const alternatives = await service.generateAlternatives(layout);
+      const alternatives = await service['generateAlternatives'](layout);
 
       if (alternatives.length > 0) {
         alternatives.forEach((alt) => {
@@ -365,7 +362,7 @@ describe('FormworkService', () => {
     it('should calculate area from length*width when area is not provided', async () => {
       const slabNoArea = {
         ...mockSlabData,
-        dimensions: { length: 10, width: 8, thickness: 0.25 },
+        dimensions: { length: 10, width: 8, thickness: 0.25, area: 80 },
       };
       const result = await service.calculateFormwork(slabNoArea, mockParams);
 

@@ -31,7 +31,7 @@ function createExecMock(stdout: string, stderr: string = ''): jest.Mock {
       if (cb) {
         cb(null, stdout, stderr);
       }
-      return { stdout: '', stderr: '' } as childProcess.ChildProcess;
+      return { stdout: '', stderr: '' } as unknown as childProcess.ChildProcess;
     },
   );
 }

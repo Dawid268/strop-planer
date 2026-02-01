@@ -11,7 +11,6 @@ describe('AuthController', () => {
   const mockUser: UserDto = {
     id: 'user-123',
     email: 'test@example.com',
-    name: 'Test User',
     companyName: 'Test Company',
     role: 'admin',
     isActive: true,
@@ -93,7 +92,6 @@ describe('AuthController', () => {
       const dto = {
         email: 'new@example.com',
         password: 'password123',
-        name: 'New User',
         companyName: 'New Company',
       };
 

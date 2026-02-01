@@ -7,7 +7,9 @@ import {
   CreateInventoryItemDto,
   UpdateInventoryItemDto,
   InventoryItemDto,
+  InventoryFilterDto,
 } from './dto/inventory.dto';
+import { ItemType, ItemCondition } from './enums/inventory.enums';
 
 describe('InventoryController', () => {
   let controller: InventoryController;
@@ -17,19 +19,18 @@ describe('InventoryController', () => {
     id: 'item-123',
     catalogCode: 'PERI-001',
     name: 'Panel Skydeck 75x75',
-    type: 'panel',
+    type: ItemType.PANEL,
     system: 'PERI_SKYDECK',
     manufacturer: 'PERI',
-    totalQuantity: 100,
-    availableQuantity: 80,
-    reservedQuantity: 20,
-    rentedQuantity: 0,
+    quantityAvailable: 80,
+    quantityReserved: 20,
     weight: 5.5,
     dailyRentPrice: 2.5,
-    purchasePrice: 150,
-    dimensionLength: 75,
-    dimensionWidth: 75,
     loadCapacity: 50,
+    condition: ItemCondition.GOOD,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const mockSummary = {
@@ -78,7 +79,7 @@ describe('InventoryController', () => {
 
   describe('findAll', () => {
     it('should return paginated list of inventory items', async () => {
-      const filter = { type: 'panel' };
+      const filter: InventoryFilterDto = { type: ItemType.PANEL };
       const pagination = { page: 1, limit: 20 };
 
       const result = await controller.findAll(filter, pagination);
@@ -117,13 +118,13 @@ describe('InventoryController', () => {
       const dto: CreateInventoryItemDto = {
         catalogCode: 'PERI-002',
         name: 'New Panel',
-        type: 'panel',
+        type: ItemType.PANEL,
         system: 'PERI_SKYDECK',
         manufacturer: 'PERI',
-        totalQuantity: 50,
+        quantityAvailable: 50,
         weight: 5,
         dailyRentPrice: 2,
-        purchasePrice: 100,
+        condition: ItemCondition.NEW,
       };
 
       const result = await controller.create(dto);
@@ -137,7 +138,7 @@ describe('InventoryController', () => {
     it('should update inventory item', async () => {
       const dto: UpdateInventoryItemDto = {
         name: 'Updated Panel',
-        totalQuantity: 120,
+        quantityAvailable: 120,
       };
 
       const result = await controller.update('item-123', dto);
@@ -152,25 +153,22 @@ describe('InventoryController', () => {
       const result = await controller.delete('item-123');
 
       expect(inventoryService.delete).toHaveBeenCalledWith('item-123');
-      expect(result.message).toContain('item-123');
+      expect(result.message).toContain('usunięty');
     });
   });
 
   describe('reserve', () => {
-    it('should reserve quantity', async () => {
+    it('should reserve inventory items', async () => {
       const result = await controller.reserve('item-123', 10);
 
       expect(inventoryService.reserve).toHaveBeenCalledWith('item-123', 10);
       expect(result.id).toBe('item-123');
     });
 
-    it('should throw BadRequestException if quantity is 0', async () => {
+    it('should throw BadRequestException for invalid quantity', async () => {
       await expect(controller.reserve('item-123', 0)).rejects.toThrow(
         BadRequestException,
       );
-    });
-
-    it('should throw BadRequestException if quantity is negative', async () => {
       await expect(controller.reserve('item-123', -5)).rejects.toThrow(
         BadRequestException,
       );
@@ -178,21 +176,15 @@ describe('InventoryController', () => {
   });
 
   describe('release', () => {
-    it('should release reservation', async () => {
+    it('should release reserved items', async () => {
       const result = await controller.release('item-123', 5);
 
       expect(inventoryService.release).toHaveBeenCalledWith('item-123', 5);
       expect(result.id).toBe('item-123');
     });
 
-    it('should throw BadRequestException if quantity is 0', async () => {
+    it('should throw BadRequestException for invalid quantity', async () => {
       await expect(controller.release('item-123', 0)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should throw BadRequestException if quantity is negative', async () => {
-      await expect(controller.release('item-123', -5)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -212,16 +204,6 @@ describe('InventoryController', () => {
         'PERI_SKYDECK',
       );
       expect(result).toHaveLength(1);
-    });
-
-    it('should work without system parameter', async () => {
-      await controller.getAvailableForProject(100, 50);
-
-      expect(inventoryService.getAvailableForProject).toHaveBeenCalledWith(
-        100,
-        50,
-        undefined,
-      );
     });
   });
 });

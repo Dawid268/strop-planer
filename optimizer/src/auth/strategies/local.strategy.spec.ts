@@ -12,7 +12,6 @@ describe('LocalStrategy', () => {
   const mockUser: UserDto = {
     id: 'user-123',
     email: 'test@example.com',
-    name: 'Test User',
     companyName: 'Test Company',
     role: 'admin',
     isActive: true,

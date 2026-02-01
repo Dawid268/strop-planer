@@ -102,6 +102,7 @@ describe('InventoryService', () => {
         quantityAvailable: 50,
         weight: 5,
         dailyRentPrice: 2,
+        condition: ItemCondition.NEW,
       };
       (repository.create as jest.Mock).mockResolvedValue({
         ...mockItem,

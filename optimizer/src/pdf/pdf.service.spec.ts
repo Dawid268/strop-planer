@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PdfService, RecognizedFile } from './pdf.service';
 import * as fs from 'fs';
 import pdfParse from 'pdf-parse';
-import { ReinforcementElementType } from '../slab/enums/slab.enums';
+import { SlabType, ReinforcementElementType } from '../slab/enums/slab.enums';
 
 jest.mock('fs');
 jest.mock('pdf-parse', () => {
@@ -232,11 +232,16 @@ describe('PdfService', () => {
             extractedAt: new Date(),
             slab: {
               id: 'STROP_1',
-              dimensions: { length: 1000, width: 800, thickness: 20 },
-              type: 'monolithic',
+              dimensions: {
+                length: 1000,
+                width: 800,
+                thickness: 20,
+                area: 800000,
+              },
+              type: SlabType.MONOLITHIC,
               beams: [],
               reinforcement: [],
-              axes: [],
+              axes: { horizontal: [], vertical: [] },
             },
             rawText: 'strop text',
             warnings: [],
@@ -252,20 +257,24 @@ describe('PdfService', () => {
             extractedAt: new Date(),
             slab: {
               id: 'STROP_1',
-              dimensions: { length: 1000, width: 800, thickness: 20 },
-              type: 'monolithic',
+              dimensions: {
+                length: 1000,
+                width: 800,
+                thickness: 20,
+                area: 800000,
+              },
+              type: SlabType.MONOLITHIC,
               beams: [],
               reinforcement: [
                 {
-                  id: 'R1',
+                  elementId: 'R1',
+                  elementType: ReinforcementElementType.STROP,
                   diameter: 12,
-                  spacing: 15,
-                  direction: 'x',
-                  position: 'bottom',
-                  type: 'main',
+                  length: 1000,
+                  quantity: 10,
                 },
               ],
-              axes: [],
+              axes: { horizontal: [], vertical: [] },
             },
             rawText: 'zbrojenie text',
             warnings: [],
@@ -291,8 +300,13 @@ describe('PdfService', () => {
             extractedAt: new Date(),
             slab: {
               id: 'STROP_1',
-              dimensions: { length: 1000, width: 800, thickness: 20 },
-              type: 'monolithic',
+              dimensions: {
+                length: 1000,
+                width: 800,
+                thickness: 20,
+                area: 800000,
+              },
+              type: SlabType.MONOLITHIC,
               beams: [
                 {
                   symbol: 'B1',
@@ -319,8 +333,13 @@ describe('PdfService', () => {
             extractedAt: new Date(),
             slab: {
               id: 'STROP_1',
-              dimensions: { length: 1000, width: 800, thickness: 20 },
-              type: 'monolithic',
+              dimensions: {
+                length: 1000,
+                width: 800,
+                thickness: 20,
+                area: 800000,
+              },
+              type: SlabType.MONOLITHIC,
               beams: [
                 {
                   symbol: 'B2',
@@ -357,8 +376,13 @@ describe('PdfService', () => {
             extractedAt: new Date(),
             slab: {
               id: 'STROP_1',
-              dimensions: { length: 1000, width: 800, thickness: 20 },
-              type: 'monolithic',
+              dimensions: {
+                length: 1000,
+                width: 800,
+                thickness: 20,
+                area: 800000,
+              },
+              type: SlabType.MONOLITHIC,
               beams: [],
               reinforcement: [],
               axes: { horizontal: [], vertical: [] },
@@ -463,6 +487,7 @@ describe('PdfService', () => {
     it('should return slab with beams when pattern matches', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'B1 4 szt. ∅12 + ∅6 wieniec B25',
         info: {},
         metadata: {},
@@ -479,6 +504,7 @@ describe('PdfService', () => {
     it('should extract beams with alternative pattern', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'B2 3 16 5,50',
         info: {},
         metadata: {},
@@ -494,6 +520,7 @@ describe('PdfService', () => {
     it('should extract reinforcement from table format', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: `Zestawienie prętów
 W1
 1 12 2,50 4`,
@@ -511,6 +538,7 @@ W1
     it('should extract reinforcement from direct patterns', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'W1 zbrojenie 5 szt S2A pręty 3 szt B1 belka 2 szt',
         info: {},
         metadata: {},
@@ -526,6 +554,7 @@ W1
     it('should return null slab when no beams or reinforcement found', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'Some random text without any construction data',
         info: {},
         metadata: {},
@@ -546,6 +575,7 @@ W1
     it('should detect TERIVA slab type', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'strop TERIVA 4.0 belka W1 2 szt',
         info: {},
         metadata: {},
@@ -561,6 +591,7 @@ W1
     it('should detect FILIGRAN slab type', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'płyta filigran W1 2 szt',
         info: {},
         metadata: {},
@@ -576,6 +607,7 @@ W1
     it('should detect ZEROWIEC slab type', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'strop żerański W1 2 szt',
         info: {},
         metadata: {},
@@ -593,6 +625,7 @@ W1
     it('should extract C class concrete', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'beton C30/37 W1 2 szt',
         info: {},
         metadata: {},
@@ -608,6 +641,7 @@ W1
     it('should extract B class concrete', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'beton B25 W1 2 szt',
         info: {},
         metadata: {},
@@ -623,6 +657,7 @@ W1
     it('should default to C25/30 when not found', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'W1 2 szt pręty',
         info: {},
         metadata: {},
@@ -640,6 +675,7 @@ W1
     it('should extract AIIIN steel class', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'stal AIIIN W1 2 szt',
         info: {},
         metadata: {},
@@ -655,6 +691,7 @@ W1
     it('should extract B500SP steel class', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'stal B500SP W1 2 szt',
         info: {},
         metadata: {},
@@ -672,6 +709,7 @@ W1
     it('should extract notes starting with UWAGI', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'W1 2 szt UWAGI: Wykonać zgodnie z projektem konstrukcyjnym',
         info: {},
         metadata: {},
@@ -688,6 +726,7 @@ W1
     it('should extract notes with dash prefix', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'W1 2 szt\n- Należy zachować odpowiednie otulenie zbrojenia minimum 25mm',
         info: {},
         metadata: {},
@@ -705,6 +744,7 @@ W1
     it('should extract numeric axes', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'osie 1 2 3 4 W1 2 szt',
         info: {},
         metadata: {},
@@ -720,6 +760,7 @@ W1
     it('should extract letter axes', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: 'osie A B C D W1 2 szt',
         info: {},
         metadata: {},
@@ -737,6 +778,7 @@ W1
     it('should classify L elements as nadproze', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: `Zestawienie prętów
 Element
 L1
@@ -759,6 +801,7 @@ L1
     it('should classify ST elements as strop', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: `Zestawienie prętów
 Element
 ST1
@@ -781,6 +824,7 @@ ST1
     it('should classify STR elements as strop', async () => {
       mockPdfParse.mockResolvedValueOnce({
         numpages: 1,
+        numrender: 1,
         text: `Zestawienie prętów
 Element
 STR

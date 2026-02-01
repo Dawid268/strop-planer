@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { InventoryRepository } from './inventory.repository';
 import { InventoryItemEntity } from '../entities/inventory-item.entity';
+import { ItemType, ItemCondition } from '../enums/inventory.enums';
 
 describe('InventoryRepository', () => {
   let repository: InventoryRepository;
@@ -23,7 +24,7 @@ describe('InventoryRepository', () => {
   const mockItem: Partial<InventoryItemEntity> = {
     id: 'item-123',
     name: 'Panel P100',
-    type: 'panel',
+    type: ItemType.PANEL,
     system: 'PERI_SKYDECK',
     quantityAvailable: 10,
     isActive: true,
@@ -60,11 +61,11 @@ describe('InventoryRepository', () => {
     it('should filter by type', async () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockItem]);
 
-      await repository.findAll({ type: 'panel' });
+      await repository.findAll({ type: ItemType.PANEL });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'item.type = :type',
-        { type: 'panel' },
+        { type: ItemType.PANEL },
       );
     });
 
@@ -104,11 +105,11 @@ describe('InventoryRepository', () => {
     it('should filter by condition', async () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockItem]);
 
-      await repository.findAll({ condition: 'good' });
+      await repository.findAll({ condition: ItemCondition.GOOD });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'item.condition = :condition',
-        { condition: 'good' },
+        { condition: ItemCondition.GOOD },
       );
     });
 
@@ -127,7 +128,7 @@ describe('InventoryRepository', () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockItem]);
 
       await repository.findAll({
-        type: 'panel',
+        type: ItemType.PANEL,
         system: 'PERI_SKYDECK',
         isActive: true,
       });
