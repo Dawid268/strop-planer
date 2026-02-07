@@ -4,6 +4,8 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -12,6 +14,8 @@ import { SlabType } from '@/slab/enums/slab.enums';
 import { AutoMap } from '@automapper/classes';
 
 @Entity('formwork_projects')
+@Index('IDX_project_user', ['userId'])
+@Index('IDX_project_status', ['status'])
 export class FormworkProjectEntity {
   @PrimaryGeneratedColumn('uuid')
   public id!: string;
@@ -113,4 +117,7 @@ export class FormworkProjectEntity {
 
   @Column({ type: 'text', nullable: true })
   public editorData?: string;
+
+  @DeleteDateColumn()
+  public deletedAt?: Date;
 }

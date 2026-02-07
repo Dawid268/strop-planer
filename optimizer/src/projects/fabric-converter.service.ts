@@ -220,7 +220,7 @@ export class FabricConverterService {
     return [];
   }
 
-  private getColor(dxfColor: any): string {
+  private getColor(dxfColor: unknown): string {
     if (typeof dxfColor === 'string') return dxfColor;
     const aci: Record<number, string> = {
       1: '#ff4444',

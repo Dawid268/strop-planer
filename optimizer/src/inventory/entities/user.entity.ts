@@ -4,12 +4,15 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
   OneToMany,
 } from 'typeorm';
 import { AutoMap } from '@automapper/classes';
 import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.entity';
 
 @Entity('users')
+@Index('IDX_user_email', ['email'], { unique: true })
 export class UserEntity {
   @AutoMap()
   @PrimaryGeneratedColumn('uuid')
@@ -54,4 +57,7 @@ export class UserEntity {
 
   @UpdateDateColumn()
   public updatedAt!: Date;
+
+  @DeleteDateColumn()
+  public deletedAt?: Date;
 }
