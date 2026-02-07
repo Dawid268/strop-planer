@@ -256,7 +256,7 @@ export class CanvasEventHandlerService {
         this.drawing.addPropAtPoint(this.canvas, pointer.x, pointer.y);
         break;
       case "select":
-        this.handleSelectToolMouseDown(pointer);
+        this.handleSelectToolMouseDown(pointer, e);
         break;
       default: {
         const targets = this.interaction.findObjectsAtPoint(
@@ -271,8 +271,16 @@ export class CanvasEventHandlerService {
     }
   }
 
-  private handleSelectToolMouseDown(pointer: { x: number; y: number }): void {
+  private handleSelectToolMouseDown(
+    pointer: { x: number; y: number },
+    e?: MouseEvent,
+  ): void {
     if (!this.canvas) return;
+
+    // If Ctrl/Shift is held, let Fabric.js handle native multi-selection
+    if (e && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+      return; // Fabric handles Ctrl/Shift+Click natively
+    }
 
     const targets = this.interaction.findObjectsAtPoint(this.canvas, pointer);
     if (targets.length > 0) {

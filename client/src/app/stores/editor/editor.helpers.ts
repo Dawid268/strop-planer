@@ -61,7 +61,7 @@ export function createDefaultTab(name: string): EditorTab {
   const cadLayer = createDefaultLayer('Podkład CAD', 'cad');
   const userLayer = createDefaultLayer('Warstwa 1', 'user');
   return {
-    id: `tab-${Date.now()}`,
+    id: generateId('tab'),
     name,
     active: true,
     layers: [cadLayer, userLayer],
@@ -72,7 +72,7 @@ export function createDefaultTab(name: string): EditorTab {
 export function createEmptyTab(name: string): EditorTab {
   const userLayer = createDefaultLayer('Warstwa 1', 'user');
   return {
-    id: `tab-${Date.now()}`,
+    id: generateId('tab'),
     name,
     active: true,
     layers: [userLayer],
