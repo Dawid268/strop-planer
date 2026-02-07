@@ -10,10 +10,10 @@ import {
   FormworkSystemType,
   FormworkCalculationParams,
   OptimizationResult,
-} from './interfaces/formwork.interface';
-import { SlabData } from '../slab/interfaces/slab.interface';
-import { InventoryService } from '../inventory/inventory.service';
-import { InventoryItemEntity } from '../inventory/entities/inventory-item.entity';
+} from '@/formwork/interfaces/formwork.interface';
+import { SlabData } from '@/slab/interfaces/slab.interface';
+import { InventoryService } from '@/inventory/inventory.service';
+import { InventoryItemEntity } from '@/inventory/entities/inventory-item.entity';
 import {
   FORMWORK_SYSTEMS,
   PROP_CONFIG,

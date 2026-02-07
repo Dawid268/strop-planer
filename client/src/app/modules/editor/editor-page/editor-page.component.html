@@ -1,0 +1,55 @@
+<div class="editor-layout flex flex-column h-screen overflow-hidden">
+  <app-editor-toolbar
+    (save)="onSave()"
+    (rotateCanvasLeft)="onRotateCanvasLeft()"
+    (rotateCanvasRight)="onRotateCanvasRight()"
+  >
+  </app-editor-toolbar>
+
+  <div class="flex-grow-1 relative overflow-hidden bg-50">
+    <!-- Loading overlay -->
+    @if (store.loading()) {
+      <div class="loading-overlay">
+        <div class="loading-content">
+          <p-progressSpinner
+            strokeWidth="4"
+            animationDuration="1s"
+          ></p-progressSpinner>
+          <p class="mt-3 text-xl font-medium">Ładowanie projektu...</p>
+        </div>
+      </div>
+    }
+
+    <!-- Error state -->
+    @if (store.error()) {
+      <div class="error-overlay">
+        <div class="error-content text-center">
+          <i
+            class="pi pi-exclamation-triangle text-6xl text-orange-500 mb-3"
+          ></i>
+          <p class="text-xl font-medium mb-2">Błąd ładowania projektu</p>
+          <p class="text-color-secondary mb-3">{{ store.error() }}</p>
+          <p-button
+            label="Spróbuj ponownie"
+            icon="pi pi-refresh"
+            (click)="store.reloadEditorData()"
+          ></p-button>
+        </div>
+      </div>
+    }
+
+    <!-- Editor Canvas -->
+    <div
+      class="editor-page__container w-full h-full relative"
+      [class.editor-page__hidden]="
+        showDxf() || store.loading() || store.error()
+      "
+    >
+      <app-editor-canvas #editorCanvas></app-editor-canvas>
+      <app-editor-sidebar
+        class="editor-page__properties-panel shadow-2"
+      ></app-editor-sidebar>
+    </div>
+  </div>
+</div>
+<p-toast></p-toast>

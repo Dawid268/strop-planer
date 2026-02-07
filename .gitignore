@@ -1,5 +1,10 @@
 # Common
 node_modules
+
+# Cursor IDE (keep rules in git)
+.cursor/
+!.cursor/rules/
+.cursor/.cache/
 dist
 tmp
 out-tsc

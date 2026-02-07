@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { SlabService } from './slab.service';
-import { SlabController } from './slab.controller';
-import { SlabProfile } from './profiles/slab.profile';
+import { SlabService } from '@/slab/slab.service';
+import { SlabController } from '@/slab/slab.controller';
+import { SlabProfile } from '@/slab/profiles/slab.profile';
 
 @Module({
   providers: [SlabService, SlabProfile],

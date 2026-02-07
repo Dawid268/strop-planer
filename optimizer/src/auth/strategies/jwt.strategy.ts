@@ -2,7 +2,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AUTH_CONSTANTS } from '../constants/auth.constants';
+import { AUTH_CONSTANTS } from '@/auth/constants/auth.constants';
 
 /**
  * JWT payload structure

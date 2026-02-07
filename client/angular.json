@@ -21,6 +21,13 @@
             "tsConfig": "tsconfig.app.json",
             "webWorkerTsConfig": "tsconfig.worker.json",
             "inlineStyleLanguage": "scss",
+            "externalDependencies": ["jsdom"],
+            "loader": {
+              ".node": "empty"
+            },
+            "define": {
+              "global": "globalThis"
+            },
             "assets": [
               {
                 "glob": "**/*",

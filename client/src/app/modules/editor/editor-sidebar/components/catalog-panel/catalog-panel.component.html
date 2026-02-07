@@ -1,0 +1,18 @@
+<div class="flex flex-column gap-1">
+  @for (item of catalogItems; track item.code) {
+    <div
+      class="catalog-item flex align-items-center gap-3 p-3 border-round hover:bg-100 cursor-pointer transition-colors transition-duration-150"
+      role="button"
+      tabindex="0"
+      (click)="selectItem(item)"
+      (keydown.enter)="selectItem(item)"
+      (keydown.space)="selectItem(item); $event.preventDefault()"
+    >
+      <i [class]="'pi ' + item.icon + ' text-xl text-primary'"></i>
+      <div class="flex flex-column overflow-hidden">
+        <span class="text-sm font-bold text-900 truncate">{{ item.name }}</span>
+        <span class="text-xs text-600">{{ item.manufacturer }}</span>
+      </div>
+    </div>
+  }
+</div>

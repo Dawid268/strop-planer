@@ -1,0 +1,48 @@
+<div class="flex flex-wrap gap-3">
+  <div class="flex-grow-1 md:flex-grow-0">
+    <p-iconField iconPosition="right">
+      <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+      <input
+        pInputText
+        [(ngModel)]="searchQuery"
+        [placeholder]="'inventory.searchPlaceholder' | transloco"
+        (ngModelChange)="onSearchChange()"
+        class="w-full"
+      />
+    </p-iconField>
+  </div>
+
+  <p-select
+    [options]="typeOptions()"
+    [(ngModel)]="filterType"
+    optionLabel="label"
+    optionValue="value"
+    [placeholder]="'inventory.filters.allTypes' | transloco"
+    (onChange)="onFilterChange()"
+    class="w-full md:w-12rem"
+  >
+    <ng-template pTemplate="label" let-item>
+      {{ item.label | transloco }}
+    </ng-template>
+    <ng-template pTemplate="item" let-item>
+      {{ item.label | transloco }}
+    </ng-template>
+  </p-select>
+
+  <p-select
+    [options]="manufacturerOptions()"
+    [(ngModel)]="filterManufacturer"
+    optionLabel="label"
+    optionValue="value"
+    [placeholder]="'inventory.filters.allManufacturers' | transloco"
+    (onChange)="onFilterChange()"
+    class="w-full md:w-12rem"
+  >
+    <ng-template pTemplate="label" let-item>
+      {{ item.label | transloco }}
+    </ng-template>
+    <ng-template pTemplate="item" let-item>
+      {{ item.label | transloco }}
+    </ng-template>
+  </p-select>
+</div>

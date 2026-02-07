@@ -1,0 +1,28 @@
+<div
+  class="canvas-container w-full h-full overflow-hidden bg-gray-100 relative"
+  #container
+  tabindex="0"
+>
+  <canvas #fabricCanvas></canvas>
+
+  @if (interaction.showContextToolbar()) {
+    <app-context-toolbar
+      [position]="interaction.contextToolbarPosition()"
+      [objectType]="interaction.selectedObjectType()"
+      (generateFormwork)="generateFormworkForSelected()"
+      (deleteItem)="deleteSelected()"
+      (rotateItem)="rotateSelected()"
+      (copyItem)="copySelected()"
+      (lockItem)="lockSelected()"
+      (convertSelection)="convertSelectedToSlab()"
+    ></app-context-toolbar>
+  }
+
+  @if (state.isLoading()) {
+    <app-canvas-loading-overlay></app-canvas-loading-overlay>
+  }
+
+  @if (!state.isLoading() && state.objectCount() === 0) {
+    <app-canvas-empty-state></app-canvas-empty-state>
+  }
+</div>

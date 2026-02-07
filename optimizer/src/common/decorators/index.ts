@@ -7,7 +7,7 @@ import {
 export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
-import { RequestWithUser } from '../interfaces/request-with-user.interface';
+import { RequestWithUser } from '@/common/interfaces/request-with-user.interface';
 
 export const GetCurrentUser = createParamDecorator(
   (

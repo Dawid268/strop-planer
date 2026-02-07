@@ -58,8 +58,18 @@ export class ErrorHandlerService {
     }
   }
 
-  private logToExternalService(error: any): void {
-    // Miejsce na integrację z Sentry lub innym systemem logowania
-    console.error('[Logged Error]:', error);
+  private logToExternalService(error: unknown): void {
+    // TODO: Integrate with Sentry or other external logging service
+    // For now, errors are handled by the notification service
+    // When Sentry is integrated, replace this with:
+    // Sentry.captureException(error);
+    if (
+      typeof window !== 'undefined' &&
+      (window as Window & { __DEV__?: boolean }).__DEV__
+    ) {
+      // Only log in development mode
+      // eslint-disable-next-line no-console
+      console.error('[ErrorHandler]:', error);
+    }
   }
 }

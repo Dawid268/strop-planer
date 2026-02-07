@@ -210,11 +210,14 @@ describe('PdfController', () => {
   });
 
   describe('uploadPdfForProject', () => {
+    const mockUserId = 'user-uuid-1';
+
     it('should throw BadRequestException when no file provided', async () => {
       await expect(
         controller.uploadPdfForProject(
           null as unknown as Express.Multer.File,
           'project-1',
+          mockUserId,
         ),
       ).rejects.toThrow(BadRequestException);
     });
@@ -235,7 +238,7 @@ describe('PdfController', () => {
         bounds: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
       });
 
-      await controller.uploadPdfForProject(mockFile, 'temp_123');
+      await controller.uploadPdfForProject(mockFile, 'temp_123', mockUserId);
 
       expect(mockProjectsService.updateArtifactPaths).not.toHaveBeenCalled();
     });

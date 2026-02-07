@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProjectsController } from './projects.controller';
-import { ProjectsService } from './projects.service';
-import { FormworkService } from '../formwork/formwork.service';
-import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
-import { FormworkProjectEntity } from '../inventory/entities/formwork-project.entity';
-import { EditorData } from './interfaces/project.interface';
-import { SlabType } from '../slab/enums/slab.enums';
+import { ProjectsController } from '@/projects/projects.controller';
+import { ProjectsService } from '@/projects/projects.service';
+import { FormworkService } from '@/formwork/formwork.service';
+import { CreateProjectDto, UpdateProjectDto } from '@/projects/dto/project.dto';
+import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.entity';
+import { EditorData } from '@/projects/interfaces/project.interface';
+import { SlabType } from '@/slab/enums/slab.enums';
+import { DxfConversionService } from '@/floor-plan/dxf-conversion.service';
+import { FabricConverterService } from '@/projects/fabric-converter.service';
 
 describe('ProjectsController', () => {
   let controller: ProjectsController;
@@ -53,6 +55,15 @@ describe('ProjectsController', () => {
     optimize: jest.fn(),
   };
 
+  const mockDxfConversionService = {
+    convertDxfToGeoJson: jest.fn(),
+    processDocument: jest.fn(),
+  };
+
+  const mockFabricConverterService = {
+    toFabricJson: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
@@ -64,6 +75,14 @@ describe('ProjectsController', () => {
         {
           provide: FormworkService,
           useValue: mockFormworkService,
+        },
+        {
+          provide: DxfConversionService,
+          useValue: mockDxfConversionService,
+        },
+        {
+          provide: FabricConverterService,
+          useValue: mockFabricConverterService,
         },
       ],
     }).compile();

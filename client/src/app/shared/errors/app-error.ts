@@ -4,7 +4,7 @@ export class AppError extends Error {
     public override readonly message: string,
     public readonly statusCode: number = 500,
     public readonly userMessage: string = 'Wystąpił nieoczekiwany błąd',
-    public readonly context?: Record<string, any>,
+    public readonly context?: Record<string, unknown>,
   ) {
     super(message);
     Object.setPrototypeOf(this, AppError.prototype);

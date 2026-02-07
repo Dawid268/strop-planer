@@ -18,14 +18,14 @@ import {
 } from '@nestjs/swagger';
 import { Request as ExpressRequest } from 'express';
 
-import { AuthService } from '../services/auth.service';
-import { LocalGuard, JwtGuard, JwtRefreshGuard } from '../guards';
+import { AuthService } from '@/auth/services/auth.service';
+import { LocalGuard, JwtGuard, JwtRefreshGuard } from '@/auth/guards';
 import {
   LoginDto,
   RegisterDto,
   TokenResponseDto,
   UserDto,
-} from '../dto/auth.dto';
+} from '@/auth/dto/auth.dto';
 import { GetCurrentUserId, GetCurrentUser, Public } from '@common/decorators';
 
 /**

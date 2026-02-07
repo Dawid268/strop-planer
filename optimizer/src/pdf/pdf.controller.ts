@@ -4,6 +4,7 @@ import {
   UploadedFile,
   UploadedFiles,
   UseInterceptors,
+  UseGuards,
   BadRequestException,
   InternalServerErrorException,
   Get,
@@ -12,6 +13,8 @@ import {
   forwardRef,
   Logger,
 } from '@nestjs/common';
+import { JwtGuard } from '@/auth/guards';
+import { GetCurrentUserId } from '@/common/decorators';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -20,13 +23,13 @@ import {
   ApiBody,
   ApiResponse,
 } from '@nestjs/swagger';
-import { PdfService, BatchUploadResult } from './pdf.service';
-import { ExtractedPdfData } from '../slab/interfaces/slab.interface';
+import { PdfService, BatchUploadResult } from '@/pdf/pdf.service';
+import { ExtractedPdfData } from '@/slab/interfaces/slab.interface';
 import {
   DxfConversionService,
   DxfData,
-} from '../floor-plan/dxf-conversion.service';
-import { ProjectsService } from '../projects/projects.service';
+} from '@/floor-plan/dxf-conversion.service';
+import { ProjectsService } from '@/projects/projects.service';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
@@ -62,6 +65,7 @@ export class PdfController {
   }
 
   @Post('upload/:projectId')
+  @UseGuards(JwtGuard)
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Wgraj plik PDF do projektu i konwertuj na DXF' })
   @ApiConsumes('multipart/form-data')
@@ -80,6 +84,7 @@ export class PdfController {
   public async uploadPdfForProject(
     @UploadedFile() file: Express.Multer.File,
     @Param('projectId') projectId: string,
+    @GetCurrentUserId() userId: string,
   ): Promise<PdfUploadResponse> {
     if (!file) throw new BadRequestException('Brak pliku');
 
@@ -90,39 +95,71 @@ export class PdfController {
         file.originalname,
       );
 
-      // pdfData.sourceFile is relative path like '/uploads/timestamp_name.pdf'
-      const absolutePdfPath = path.join(process.cwd(), pdfData.sourceFile);
+      // pdfData.sourceFile is like '/uploads/timestamp_name.pdf' – normalize so path.join does not treat it as absolute
+      const sourcePath = pdfData.sourceFile.startsWith('/')
+        ? pdfData.sourceFile.slice(1)
+        : pdfData.sourceFile;
+      const absolutePdfPath = path.join(process.cwd(), sourcePath);
 
-      // 2. Prepare paths
+      // 2. Prepare paths (DXF in uploads/, JSON in uploads/converted/ so GET floor-plans-dxf finds it)
       const documentId = path.parse(absolutePdfPath).name;
       const uploadDir = path.dirname(absolutePdfPath);
+      const convertedDir = path.join(process.cwd(), 'uploads', 'converted');
       const dxfFileName = `${documentId}.dxf`;
       const jsonFileName = `${documentId}.json`;
 
       const dxfPathAbs = path.join(uploadDir, dxfFileName);
-      const jsonPathAbs = path.join(uploadDir, jsonFileName);
+      await fs.mkdir(convertedDir, { recursive: true });
+      const jsonPathAbs = path.join(convertedDir, jsonFileName);
 
       const dxfPathRel = `/uploads/${dxfFileName}`;
-      const jsonPathRel = `/uploads/${jsonFileName}`;
+      const jsonPathRel = `/uploads/converted/${jsonFileName}`;
 
-      // 3. Convert PDF -> DXF (Inkscape)
-      await this.dxfConversionService.convertPdfToDxf(
-        absolutePdfPath,
-        dxfPathAbs,
-      );
+      // 3 & 4. Convert PDF -> DXF and parse to JSON with retry (max 3 attempts: 1 + 2 retries)
+      const MAX_ATTEMPTS = 3;
+      const RETRY_DELAY_MS = 1500;
+      let jsonData: DxfData | undefined;
 
-      // 4. Parse DXF -> JSON
-      const jsonData = await this.dxfConversionService.parseDxfFile(dxfPathAbs);
-      await fs.writeFile(jsonPathAbs, JSON.stringify(jsonData, null, 2));
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          this.logger.log(
+            `PDF→DXF conversion attempt ${attempt}/${MAX_ATTEMPTS} for ${absolutePdfPath}`,
+          );
+          await this.dxfConversionService.convertPdfToDxf(
+            absolutePdfPath,
+            dxfPathAbs,
+          );
+          jsonData = await this.dxfConversionService.parseDxfFile(dxfPathAbs);
+          await fs.writeFile(jsonPathAbs, JSON.stringify(jsonData, null, 2));
+          break;
+        } catch (err) {
+          if (attempt === MAX_ATTEMPTS) throw err;
+          this.logger.warn(
+            `Conversion attempt ${attempt} failed, retrying in ${RETRY_DELAY_MS}ms...`,
+            err,
+          );
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        }
+      }
+
+      if (jsonData === undefined) {
+        throw new InternalServerErrorException(
+          'Conversion failed after retries',
+        );
+      }
 
       // 5. Update Project in DB (Only if not a temporary ID)
       if (projectId && !projectId.startsWith('temp_')) {
         try {
-          await this.projectsService.updateArtifactPaths(projectId, {
-            sourcePdfPath: pdfData.sourceFile,
-            dxfPath: dxfPathRel,
-            geoJsonPath: jsonPathRel,
-          });
+          await this.projectsService.updateArtifactPaths(
+            projectId,
+            {
+              sourcePdfPath: pdfData.sourceFile,
+              dxfPath: dxfPathRel,
+              geoJsonPath: jsonPathRel,
+            },
+            userId,
+          );
         } catch (err) {
           this.logger.warn(
             `Could not update artifacts for project ${projectId} (might be temp or missing):`,

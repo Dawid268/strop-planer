@@ -7,10 +7,10 @@ import { Mapper } from '@automapper/core';
 import { InjectMapper } from '@automapper/nestjs';
 import { ConfigService } from '@nestjs/config';
 
-import { UserEntity } from '../../inventory/entities/user.entity';
-import { RegisterDto, UserDto, TokenResponseDto } from '../dto/auth.dto';
+import { UserEntity } from '@/inventory/entities/user.entity';
+import { RegisterDto, UserDto, TokenResponseDto } from '@/auth/dto/auth.dto';
 import { UnauthorizedError, ValidationError } from '@shared/errors/app-error';
-import { AUTH_CONSTANTS } from '../constants/auth.constants';
+import { AUTH_CONSTANTS } from '@/auth/constants/auth.constants';
 
 /**
  * Authentication Service

@@ -1,5 +1,5 @@
 import { AutoMap } from '@automapper/classes';
-import { SlabType, ReinforcementElementType } from '../enums/slab.enums';
+import { SlabType, ReinforcementElementType } from '@/slab/enums/slab.enums';
 
 export class SlabDimensions {
   @AutoMap()

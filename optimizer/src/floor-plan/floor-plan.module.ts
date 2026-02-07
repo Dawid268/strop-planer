@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { FloorPlanDxfController } from './floor-plan-dxf.controller';
-import { DxfConversionService } from './dxf-conversion.service';
+import { FloorPlanDxfController } from '@/floor-plan/floor-plan-dxf.controller';
+import { DxfConversionService } from '@/floor-plan/dxf-conversion.service';
 
 @Module({
   controllers: [FloorPlanDxfController],

@@ -4,13 +4,13 @@ import {
   CreateInventoryItemDto,
   UpdateInventoryItemDto,
   InventoryFilterDto,
-} from './dto/inventory.dto';
-import { InventorySummary } from './interfaces/inventory.interface';
-import { InventoryItemEntity } from './entities/inventory-item.entity';
-import { InventoryRepository } from './repositories/inventory.repository';
+} from '@/inventory/dto/inventory.dto';
+import { InventorySummary } from '@/inventory/interfaces/inventory.interface';
+import { InventoryItemEntity } from '@/inventory/entities/inventory-item.entity';
+import { InventoryRepository } from '@/inventory/repositories/inventory.repository';
 import { Mapper } from '@automapper/core';
 import { InjectMapper } from '@automapper/nestjs';
-import { InventoryItemDto } from './dto/inventory.dto';
+import { InventoryItemDto } from '@/inventory/dto/inventory.dto';
 
 @Injectable()
 export class InventoryService {

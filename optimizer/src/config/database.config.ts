@@ -1,7 +1,7 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { join } from 'path';
-import { EnvironmentVariables } from './env.validation';
+import { EnvironmentVariables } from '@/config/env.validation';
 
 export const getDatabaseConfig = (
   configService: ConfigService<EnvironmentVariables>,

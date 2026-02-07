@@ -1,0 +1,60 @@
+@if (position()) {
+  <div
+    class="context-toolbar absolute flex gap-1 p-1 bg-white shadow-3 border-round-lg"
+    [style.left.px]="position()!.x"
+    [style.top.px]="position()!.y"
+  >
+    @if (objectType() === "slab" || objectType() === "polygon") {
+      <button
+        pButton
+        icon="pi pi-magic"
+        class="p-button-success p-button-sm p-button-text"
+        pTooltip="Generuj Szalunek"
+        aria-label="Generuj Szalunek"
+        (click)="generateFormwork.emit()"
+      ></button>
+    }
+    @if (objectType() === "multiple" || objectType() === "line") {
+      <button
+        pButton
+        icon="pi pi-pencil"
+        class="p-button-warning p-button-sm p-button-text"
+        pTooltip="Definiuj Strop z Zaznaczenia"
+        aria-label="Definiuj Strop"
+        (click)="convertSelection.emit()"
+      ></button>
+    }
+    <button
+      pButton
+      icon="pi pi-trash"
+      class="p-button-danger p-button-sm p-button-text"
+      pTooltip="Usuń (Del)"
+      aria-label="Usuń element"
+      (click)="deleteItem.emit()"
+    ></button>
+    <button
+      pButton
+      icon="pi pi-refresh"
+      class="p-button-sm p-button-text"
+      pTooltip="Obróć 90° (R)"
+      aria-label="Obróć 90 stopni"
+      (click)="rotateItem.emit()"
+    ></button>
+    <button
+      pButton
+      icon="pi pi-copy"
+      class="p-button-sm p-button-text"
+      pTooltip="Kopiuj (Ctrl+C)"
+      aria-label="Kopiuj element"
+      (click)="copyItem.emit()"
+    ></button>
+    <button
+      pButton
+      icon="pi pi-lock"
+      class="p-button-sm p-button-text"
+      pTooltip="Zablokuj"
+      aria-label="Zablokuj element"
+      (click)="lockItem.emit()"
+    ></button>
+  </div>
+}

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { InventoryService } from './inventory.service';
-import { InventoryController } from './inventory.controller';
-import { InventoryItemEntity } from './entities/inventory-item.entity';
-import { InventoryRepository } from './repositories/inventory.repository';
-import { InventoryProfile } from './profiles/inventory.profile';
+import { InventoryService } from '@/inventory/inventory.service';
+import { InventoryController } from '@/inventory/inventory.controller';
+import { InventoryItemEntity } from '@/inventory/entities/inventory-item.entity';
+import { InventoryRepository } from '@/inventory/repositories/inventory.repository';
+import { InventoryProfile } from '@/inventory/profiles/inventory.profile';
 
 @Module({
   imports: [TypeOrmModule.forFeature([InventoryItemEntity])],

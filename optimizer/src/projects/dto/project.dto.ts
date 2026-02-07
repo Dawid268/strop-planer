@@ -6,18 +6,19 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { ExtractedPdfData } from '../../slab/interfaces/slab.interface';
-import { SlabType } from '../../slab/enums/slab.enums';
+import { ExtractedPdfData } from '@/slab/interfaces/slab.interface';
+import { SlabType } from '@/slab/enums/slab.enums';
 import {
   FormworkLayout,
   OptimizationResult,
-} from '../../formwork/interfaces/formwork.interface';
+} from '@/formwork/interfaces/formwork.interface';
 import {
   EditorData,
   ExtractedSlabGeometry,
-} from '../interfaces/project.interface';
+} from '@/projects/interfaces/project.interface';
 import { PROJECT_STATUS, ProjectStatusType } from '@common/constants';
 import { FORMWORK_SYSTEMS, FormworkSystemType } from '@common/constants';
 
@@ -62,6 +63,7 @@ export class CreateProjectDto {
   })
   @IsOptional()
   @IsEnum(SlabType)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   public slabType?: SlabType;
 
   @ApiPropertyOptional({
@@ -71,6 +73,7 @@ export class CreateProjectDto {
   })
   @IsOptional()
   @IsEnum(FORMWORK_SYSTEMS)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   public formworkSystem?: FormworkSystemType;
 
   @ApiPropertyOptional()
@@ -121,6 +124,7 @@ export class UpdateProjectDto {
   })
   @IsOptional()
   @IsEnum(PROJECT_STATUS)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   public status?: ProjectStatusType;
 
   @ApiPropertyOptional()
@@ -146,11 +150,13 @@ export class UpdateProjectDto {
   @ApiPropertyOptional({ enum: SlabType })
   @IsOptional()
   @IsEnum(SlabType)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   public slabType?: SlabType;
 
   @ApiPropertyOptional({ enum: Object.values(FORMWORK_SYSTEMS) })
   @IsOptional()
   @IsEnum(FORMWORK_SYSTEMS)
+  @Transform(({ value }) => (value === '' ? undefined : value))
   public formworkSystem?: FormworkSystemType;
 
   @ApiPropertyOptional()
@@ -217,6 +223,9 @@ export class ProjectResponseDto {
   public extractedSlabGeometry?: ExtractedSlabGeometry;
   public editorData?: EditorData;
   @ApiPropertyOptional()
+  public sourcePdfPath?: string;
+
+  @ApiPropertyOptional()
   public geoJsonPath?: string;
 
   @ApiPropertyOptional()
@@ -224,6 +233,18 @@ export class ProjectResponseDto {
 
   @ApiPropertyOptional()
   public dxfPath?: string;
+
+  /** Status ekstrakcji geometrii: pending | processing | completed | failed */
+  @ApiPropertyOptional()
+  public extractionStatus?: string;
+
+  /** Aktualna / ostatnia numer próby ekstrakcji (1..N) */
+  @ApiPropertyOptional()
+  public extractionAttempts?: number;
+
+  /** Ostatni komunikat z joba (błąd lub status) */
+  @ApiPropertyOptional()
+  public extractionMessage?: string;
 
   public createdAt!: Date;
   public updatedAt!: Date;

@@ -1,0 +1,66 @@
+<div class="flex gap-2 mb-3">
+  <p-button
+    icon="pi pi-plus"
+    label="Nowa strona"
+    [text]="true"
+    [outlined]="true"
+    size="small"
+    (click)="onNewTabClick()"
+  ></p-button>
+</div>
+
+<div class="flex flex-column gap-1">
+  @for (tab of store.tabs(); track tab.id) {
+    <div
+      class="tab-item flex align-items-center justify-content-between p-2 hover:bg-50 border-round transition-colors transition-duration-150 cursor-pointer"
+      role="tab"
+      tabindex="0"
+      [class.bg-primary-50]="store.activeTabId() === tab.id"
+      [class.border-primary-200]="store.activeTabId() === tab.id"
+      [class.border-1]="store.activeTabId() === tab.id"
+      (click)="store.setActiveTab(tab.id)"
+      (keydown.enter)="store.setActiveTab(tab.id)"
+      (keydown.space)="store.setActiveTab(tab.id); $event.preventDefault()"
+    >
+      <div class="flex align-items-center gap-2">
+        <i class="pi pi-file text-500"></i>
+        @if (editingTabId() === tab.id) {
+          <input
+            #renameInput
+            pInputText
+            [ngModel]="editingTabName()"
+            (ngModelChange)="editingTabName.set($event)"
+            (blur)="saveTabName(tab.id)"
+            (keyup.enter)="saveTabName(tab.id)"
+            class="p-inputtext-sm w-6rem"
+            (click)="$event.stopPropagation()"
+          />
+        } @else {
+          <span
+            class="text-sm font-medium"
+            (dblclick)="startEditingTabName(tab.id); $event.stopPropagation()"
+            >{{ tab.name }}</span
+          >
+        }
+        <span class="text-xs text-400"> ({{ tab.layers.length }} warstw) </span>
+      </div>
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+      <div
+        class="flex align-items-center gap-1"
+        (click)="$event.stopPropagation()"
+      >
+        @if (store.tabs().length > 1) {
+          <p-button
+            icon="pi pi-trash"
+            [text]="true"
+            severity="danger"
+            [rounded]="true"
+            size="small"
+            (click)="store.removeTab(tab.id)"
+            pTooltip="Usuń stronę"
+          ></p-button>
+        }
+      </div>
+    </div>
+  }
+</div>

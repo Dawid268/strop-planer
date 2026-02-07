@@ -8,7 +8,7 @@ import {
   ReinforcementData,
   AxesData,
   BeamSection,
-} from '../interfaces/slab.interface';
+} from '@/slab/interfaces/slab.interface';
 import {
   SlabDataDto,
   BeamDataDto,
@@ -16,7 +16,7 @@ import {
   ReinforcementDataDto,
   AxesDto,
   BeamSectionDto,
-} from '../dto/slab.dto';
+} from '@/slab/dto/slab.dto';
 
 @Injectable()
 export class SlabProfile extends AutomapperProfile {

@@ -8,8 +8,8 @@ import {
   SlabData,
   BeamData,
   ReinforcementData,
-} from '../slab/interfaces/slab.interface';
-import { SlabType, ReinforcementElementType } from '../slab/enums/slab.enums';
+} from '@/slab/interfaces/slab.interface';
+import { SlabType, ReinforcementElementType } from '@/slab/enums/slab.enums';
 
 // Drawing type for recognition
 export type DrawingType =

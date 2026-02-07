@@ -4,11 +4,17 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
 } from 'typeorm';
 import { AutoMap } from '@automapper/classes';
-import { ItemType, ItemCondition } from '../enums/inventory.enums';
+import { ItemType, ItemCondition } from '@/inventory/enums/inventory.enums';
 
 @Entity('inventory_items')
+@Index('IDX_inventory_item_owner', ['ownerId'])
+@Index('IDX_inventory_item_type', ['type'])
+@Index('IDX_inventory_item_system', ['system'])
+@Index('IDX_inventory_item_active', ['isActive'])
 export class InventoryItemEntity {
   @AutoMap()
   @PrimaryGeneratedColumn('uuid')
@@ -104,4 +110,7 @@ export class InventoryItemEntity {
   @AutoMap()
   @UpdateDateColumn()
   public updatedAt!: Date;
+
+  @DeleteDateColumn()
+  public deletedAt?: Date;
 }
