@@ -16,8 +16,8 @@ import { Subject, debounceTime, distinctUntilChanged } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { EditorStore } from "@stores/editor.store";
 import { EditorLayer } from "@models/project.model";
-import { LayerItemComponent } from "../layer-item";
-import { SelectionActionsComponent } from "../selection-actions";
+import { LayerItemComponent } from '@modules/editor/editor-sidebar/components/layer-item';
+import { SelectionActionsComponent } from '@modules/editor/editor-sidebar/components/selection-actions';
 
 @Component({
   selector: "app-layers-panel",

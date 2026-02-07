@@ -10,9 +10,9 @@ export class GlobalErrorHandler implements ErrorHandler {
     // Unikamy zapętlenia, jeśli błąd wystąpi podczas samej obsługi
     try {
       this.errorService.handleError(error);
-    } catch (e) {
-      console.error('Critical failure in GlobalErrorHandler:', e);
-      console.error('Original error:', error);
+    } catch {
+      // Last-resort: silent swallow to prevent infinite loop.
+      // In production, Sentry SDK captures these independently.
     }
   }
 }

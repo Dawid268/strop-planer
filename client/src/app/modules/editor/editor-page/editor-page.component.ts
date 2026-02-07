@@ -52,15 +52,6 @@ export class EditorPageComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    // #region agent log
-    window.addEventListener("error", (event) => {
-      fetch("http://127.0.0.1:7247/ingest/7133446a-8894-439e-aca5-19c6ad6230f6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"editor-page.component.ts:55",message:"window_error",data:{message:event.message,filename:event.filename,lineno:event.lineno,colno:event.colno},timestamp:Date.now(),sessionId:"debug-session",runId:"pre-fix",hypothesisId:"H6"})}).catch(()=>{});
-    });
-    window.addEventListener("unhandledrejection", (event) => {
-      const reason = event.reason as { message?: string; name?: string } | null;
-      fetch("http://127.0.0.1:7247/ingest/7133446a-8894-439e-aca5-19c6ad6230f6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"editor-page.component.ts:60",message:"unhandled_rejection",data:{name:reason?.name,reason:reason?.message},timestamp:Date.now(),sessionId:"debug-session",runId:"pre-fix",hypothesisId:"H7"})}).catch(()=>{});
-    });
-    // #endregion
     const id = this.route.snapshot.paramMap.get('id');
     this.projectId.set(id);
     if (id) {

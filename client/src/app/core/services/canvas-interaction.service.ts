@@ -24,9 +24,6 @@ export class CanvasInteractionService {
     canvas: fabric.Canvas,
     container: HTMLElement,
   ): void {
-    // #region agent log
-    fetch("http://127.0.0.1:7247/ingest/7133446a-8894-439e-aca5-19c6ad6230f6",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({location:"canvas-interaction.service.ts:27",message:"update_context_toolbar",data:{hasActive:!!canvas.getActiveObject(),containerExists:!!container,containerWidth:container?.clientWidth,containerHeight:container?.clientHeight},timestamp:Date.now(),sessionId:"debug-session",runId:"pre-fix",hypothesisId:"H5"})}).catch(()=>{});
-    // #endregion
     const active = canvas.getActiveObject();
     if (!active) {
       this.showContextToolbar.set(false);
