@@ -119,8 +119,14 @@ export const AuthStore = signalStore(
         ),
       ),
       logout: (): void => {
-        authService.logout(store.accessToken());
+        const token = store.accessToken();
+        // Clear state first so UI reacts immediately
         patchState(store, initialState);
+        // Then notify server (fire-and-forget — state is already cleared)
+        if (token) {
+          authService.logoutApi(token);
+        }
+        router.navigate(['/login']);
       },
       /** Used by auth interceptor after successful token refresh */
       setTokens(accessToken: string, refreshToken: string): void {

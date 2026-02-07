@@ -1,6 +1,5 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
 import { Observable, map, throwError } from 'rxjs';
 
 import { environment } from '@env/environment';
@@ -20,22 +19,16 @@ import { ApiResponse } from '@models/api-response.model';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly router = inject(Router);
-
   private readonly API_URL = `${environment.apiUrl}/auth`;
 
-  /**
-   * Login user with credentials
-   */
+  /** Login user with credentials */
   public login(dto: LoginDto): Observable<AuthResponse> {
     return this.http
       .post<ApiResponse<AuthResponse>>(`${this.API_URL}/login`, dto)
       .pipe(map((res) => res.data));
   }
 
-  /**
-   * Refresh access token using refresh token (token from AuthStore)
-   */
+  /** Refresh access token using refresh token */
   public refreshToken(refreshToken: string): Observable<AuthResponse> {
     if (!refreshToken) {
       return throwError(() => new Error('No refresh token available'));
@@ -45,16 +38,12 @@ export class AuthService {
       .post<ApiResponse<AuthResponse>>(
         `${this.API_URL}/refresh`,
         {},
-        {
-          headers: { Authorization: `Bearer ${refreshToken}` },
-        },
+        { headers: { Authorization: `Bearer ${refreshToken}` } },
       )
       .pipe(map((res) => res.data));
   }
 
-  /**
-   * Register new user
-   */
+  /** Register new user */
   public register(dto: RegisterDto): Observable<void> {
     return this.http
       .post<ApiResponse<AuthUser>>(`${this.API_URL}/register`, dto)
@@ -62,12 +51,16 @@ export class AuthService {
   }
 
   /**
-   * Logout: call API if token present. State clearing is done in AuthStore.
+   * Notify server about logout (fire-and-forget).
+   * State clearing and navigation are handled by AuthStore.
    */
-  public logout(accessToken: string | null): void {
-    if (accessToken) {
-      this.http.post(`${this.API_URL}/logout`, {}).subscribe();
-    }
-    this.router.navigate(['/login']);
+  public logoutApi(accessToken: string): void {
+    this.http
+      .post(
+        `${this.API_URL}/logout`,
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      )
+      .subscribe();
   }
 }

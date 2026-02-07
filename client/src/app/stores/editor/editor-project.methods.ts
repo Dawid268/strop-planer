@@ -13,7 +13,7 @@ import { pipe } from 'rxjs';
 import { switchMap, tap, catchError } from 'rxjs/operators';
 import { MessageService } from 'primeng/api';
 import { ProjectsApiService } from '@api/projects-api.service';
-import type { Shape, ViewMode, Point } from '@models/editor.models';
+import type { Shape, ViewMode, Point, EditorTool, CatalogItem } from '@models/editor.models';
 import type { EditorData, EditorTab } from '@models/project.model';
 import type { EditorExtendedState, EditorStoreRef } from './editor.state';
 import { createDefaultTab, createDefaultLayer } from './editor.helpers';
@@ -39,7 +39,8 @@ export function createProjectMethods(
   projectsApi: ProjectsApiService,
   messageService: MessageService,
 ) {
-  return {
+  // Methods object — allows internal cross-references (e.g. reloadEditorData → loadEditorData)
+  const methods = {
     /** Set project ID in store */
     setProjectId(id: string): void {
       patchState(store, { projectId: id });
@@ -173,7 +174,7 @@ export function createProjectMethods(
     reloadEditorData(): void {
       const projectId = store.projectId();
       if (projectId) {
-        this.loadEditorData(projectId);
+        methods.loadEditorData(projectId);
       }
     },
 
@@ -243,7 +244,7 @@ export function createProjectMethods(
     },
 
     toggleGrid(): void {
-      patchState(store, { showGrid: !store.gridSize() });
+      patchState(store, { showGrid: !store.showGrid() });
     },
 
     setGridSize(size: number): void {
@@ -314,11 +315,11 @@ export function createProjectMethods(
       patchState(store, { selectedIds: [] });
     },
 
-    setActiveTool(tool: string): void {
+    setActiveTool(tool: EditorTool): void {
       patchState(store, { activeTool: tool, activeCatalogItem: null });
     },
 
-    setActiveCatalogItem(item: unknown | null): void {
+    setActiveCatalogItem(item: CatalogItem | null): void {
       patchState(store, {
         activeCatalogItem: item,
         activeTool: item ? 'add-panel' : 'select',
@@ -358,4 +359,6 @@ export function createProjectMethods(
       }));
     },
   };
+
+  return methods;
 }

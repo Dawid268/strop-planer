@@ -1,52 +1,103 @@
-import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
+import {
+  HttpInterceptorFn,
+  HttpErrorResponse,
+  HttpRequest,
+  HttpHandlerFn,
+  HttpEvent,
+} from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, throwError, switchMap } from 'rxjs';
+import {
+  catchError,
+  throwError,
+  switchMap,
+  Observable,
+  BehaviorSubject,
+  filter,
+  take,
+} from 'rxjs';
 import { AuthService } from '@api/auth.service';
 import { AuthStore } from '@stores/auth.store';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
+// ============================================================================
+// Refresh Token Lock (prevents concurrent refresh requests)
+// ============================================================================
+
+let isRefreshing = false;
+const refreshTokenSubject = new BehaviorSubject<string | null>(null);
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function addToken(
+  req: HttpRequest<unknown>,
+  token: string,
+): HttpRequest<unknown> {
+  return req.clone({
+    setHeaders: { Authorization: `Bearer ${token}` },
+  });
+}
+
+// ============================================================================
+// Interceptor
+// ============================================================================
+
+const SKIP_URLS = ['/auth/login', '/auth/register', '/auth/refresh'];
+
+export const authInterceptor: HttpInterceptorFn = (
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+): Observable<HttpEvent<unknown>> => {
   const authStore = inject(AuthStore);
   const authService = inject(AuthService);
   const token = authStore.accessToken();
 
-  let authReq = req;
-  const skipUrls = ['/auth/login', '/auth/register'];
-  const shouldSkip = skipUrls.some((url) => req.url.includes(url));
+  const shouldSkip = SKIP_URLS.some((url) => req.url.includes(url));
 
-  if (token && !shouldSkip) {
-    authReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
+  const authReq = token && !shouldSkip ? addToken(req, token) : req;
 
   return next(authReq).pipe(
-    catchError((error) => {
+    catchError((error: unknown) => {
       if (
         error instanceof HttpErrorResponse &&
         error.status === 401 &&
-        !req.url.includes('/auth/login') &&
-        !req.url.includes('/auth/refresh')
+        !shouldSkip
       ) {
-        const refreshToken = authStore.refreshToken();
-        if (!refreshToken) {
+        // ---- Refresh flow with lock ----
+        if (isRefreshing) {
+          // Wait for the ongoing refresh to complete
+          return refreshTokenSubject.pipe(
+            filter((t): t is string => t !== null),
+            take(1),
+            switchMap((newToken) => next(addToken(req, newToken))),
+          );
+        }
+
+        isRefreshing = true;
+        refreshTokenSubject.next(null);
+
+        const refreshTk = authStore.refreshToken();
+        if (!refreshTk) {
+          isRefreshing = false;
           authStore.logout();
           return throwError(() => error);
         }
-        return authService.refreshToken(refreshToken).pipe(
+
+        return authService.refreshToken(refreshTk).pipe(
           switchMap((response) => {
-            authStore.setTokens(response.access_token, response.refresh_token);
-            const newAuthReq = req.clone({
-              setHeaders: {
-                Authorization: `Bearer ${response.access_token}`,
-              },
-            });
-            return next(newAuthReq);
+            isRefreshing = false;
+            authStore.setTokens(
+              response.access_token,
+              response.refresh_token,
+            );
+            refreshTokenSubject.next(response.access_token);
+            return next(addToken(req, response.access_token));
           }),
-          catchError(() => {
+          catchError((refreshError: unknown) => {
+            isRefreshing = false;
+            refreshTokenSubject.next(null);
             authStore.logout();
-            return throwError(() => error);
+            return throwError(() => refreshError);
           }),
         );
       }
