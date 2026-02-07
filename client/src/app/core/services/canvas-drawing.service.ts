@@ -1,6 +1,6 @@
 import { Injectable, inject } from "@angular/core";
 import { fabric } from "fabric";
-import { EditorStore } from "@stores/editor.store";
+import { EditorStore } from "@stores/editor";
 import {
   CustomFabricObject,
   CANVAS_COLORS,

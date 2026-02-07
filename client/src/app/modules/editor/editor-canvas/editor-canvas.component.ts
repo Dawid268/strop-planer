@@ -15,7 +15,7 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { fabric } from "fabric";
-import { EditorStore } from "@stores/editor.store";
+import { EditorStore } from "@stores/editor";
 import { CadService } from "@core/services/cad.service";
 import { FabricRendererService } from "@core/services/fabric-renderer.service";
 import { CustomFabricObject, rotatePoint } from "@utils/canvas.utils";

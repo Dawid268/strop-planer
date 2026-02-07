@@ -11,7 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import { EditorToolbarComponent } from '@modules/editor/editor-toolbar/editor-toolbar.component';
 import { EditorCanvasComponent } from '@modules/editor/editor-canvas/editor-canvas.component';
 import { EditorSidebarComponent } from '@modules/editor/editor-sidebar/editor-sidebar.component';

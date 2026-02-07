@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import { EditorLayer } from '@models/project.model';
 
 @Component({

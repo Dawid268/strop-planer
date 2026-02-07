@@ -3,7 +3,7 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { TranslocoModule } from '@jsverse/transloco';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 
 @Component({
   selector: 'app-zoom-controls',

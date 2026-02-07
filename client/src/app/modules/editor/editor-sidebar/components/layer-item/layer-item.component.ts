@@ -13,7 +13,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { SliderModule } from 'primeng/slider';
 import { InputTextModule } from 'primeng/inputtext';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import { EditorLayer } from '@models/project.model';
 
 @Component({

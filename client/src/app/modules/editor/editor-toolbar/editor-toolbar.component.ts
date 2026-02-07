@@ -11,7 +11,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DividerModule } from 'primeng/divider';
 import { MenuModule } from 'primeng/menu';
 import { TranslocoModule } from '@jsverse/transloco';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import {
   ToolButtonsComponent,
   ZoomControlsComponent,

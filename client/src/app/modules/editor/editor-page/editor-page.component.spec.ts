@@ -2,7 +2,7 @@ import 'zone.js';
 import 'zone.js/testing';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { EditorPageComponent } from './editor-page.component';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import { ProjectsApiService } from '@api/projects-api.service';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { MessageService } from 'primeng/api';

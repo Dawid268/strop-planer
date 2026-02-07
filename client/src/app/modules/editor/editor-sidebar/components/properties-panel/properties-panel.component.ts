@@ -1,7 +1,7 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { TranslocoModule } from '@jsverse/transloco';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 
 @Component({
   selector: 'app-properties-panel',

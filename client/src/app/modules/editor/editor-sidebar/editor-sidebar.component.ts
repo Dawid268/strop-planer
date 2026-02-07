@@ -12,7 +12,7 @@ import { ButtonModule } from "primeng/button";
 import { TranslocoModule } from "@jsverse/transloco";
 import { InputTextModule } from "primeng/inputtext";
 import { DialogModule } from "primeng/dialog";
-import { EditorStore } from "@stores/editor.store";
+import { EditorStore } from "@stores/editor";
 import {
   TabsPanelComponent,
   LayersPanelComponent,

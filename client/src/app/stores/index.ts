@@ -4,7 +4,8 @@
 export { AppStore } from './app.store';
 export { AuthStore } from './auth.store';
 export { DashboardStore } from './dashboard.store';
-export { EditorStore } from './editor.store';
+export { EditorStore } from './editor';
+export type { EditorExtendedState, SidebarPanel } from './editor';
 export {
   EditorLayoutStore,
   createDefaultTab,

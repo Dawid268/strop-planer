@@ -1,6 +1,6 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 
 interface CatalogItem {
   code: string;

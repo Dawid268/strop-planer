@@ -5,7 +5,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { TranslocoModule } from '@jsverse/transloco';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import type { EditorTool } from '@models/editor.models';
 
 @Component({

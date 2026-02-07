@@ -14,7 +14,7 @@ import { TranslocoModule, TranslocoService } from "@jsverse/transloco";
 import { MenuItem } from "primeng/api";
 import { Subject, debounceTime, distinctUntilChanged } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EditorStore } from "@stores/editor.store";
+import { EditorStore } from "@stores/editor";
 import { EditorLayer } from "@models/project.model";
 import { LayerItemComponent } from '@modules/editor/editor-sidebar/components/layer-item';
 import { SelectionActionsComponent } from '@modules/editor/editor-sidebar/components/selection-actions';

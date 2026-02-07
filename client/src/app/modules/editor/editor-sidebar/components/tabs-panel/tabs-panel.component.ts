@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { InputTextModule } from 'primeng/inputtext';
-import { EditorStore } from '@stores/editor.store';
+import { EditorStore } from '@stores/editor';
 import { ElementRef, viewChild } from '@angular/core';
 
 @Component({
