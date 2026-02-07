@@ -4,7 +4,9 @@ import { promises as fs } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
-import { FLOOR_PLAN_CONSTANTS } from './constants/floor-plan.constants';
+
+import { appendToToolLog } from '@common/utils/tool-logger.util';
+import { FLOOR_PLAN_CONSTANTS } from '@/floor-plan/constants/floor-plan.constants';
 
 const execAsync = promisify(exec);
 
@@ -34,6 +36,7 @@ interface RawDxfEntity {
   center?: { x: number; y: number };
   radius?: number;
   startPoint?: { x: number; y: number };
+  endPoint?: { x: number; y: number };
   position?: { x: number; y: number };
   text?: string;
   string?: string;
@@ -52,7 +55,14 @@ export interface DxfData {
     maxX: number;
     maxY: number;
   };
+  /** Total entities before cap (if capped) */
+  entityCountTotal?: number;
+  /** True if entities were capped for response size */
+  capped?: boolean;
 }
+
+/** Max entities returned to avoid browser freeze (now safer with polyline preservation) */
+const MAX_ENTITIES_RESPONSE = 10000;
 
 @Injectable()
 export class DxfConversionService {
@@ -113,19 +123,26 @@ export class DxfConversionService {
   }
 
   public async getFloorPlanData(documentId: string): Promise<DxfData> {
-    const jsonPath = path.join(
+    const convertedPath = path.join(
       FLOOR_PLAN_CONSTANTS.CONVERTED_DIR,
       `${documentId}.json`,
     );
-    try {
-      const jsonContent = await fs.readFile(jsonPath, 'utf-8');
-      return JSON.parse(jsonContent) as DxfData;
-    } catch {
-      this.logger.warn(`Floor plan data not found: ${documentId}`, {
-        documentId,
-      });
-      throw new BadRequestException('Floor plan data not found');
+    const uploadPath = path.join(
+      FLOOR_PLAN_CONSTANTS.UPLOAD_DIR,
+      `${documentId}.json`,
+    );
+    for (const jsonPath of [convertedPath, uploadPath]) {
+      try {
+        const jsonContent = await fs.readFile(jsonPath, 'utf-8');
+        return JSON.parse(jsonContent) as DxfData;
+      } catch {
+        continue;
+      }
     }
+    this.logger.warn(`Floor plan data not found: ${documentId}`, {
+      documentId,
+    });
+    throw new BadRequestException('Floor plan data not found');
   }
 
   public async getRawDxfContent(documentId: string): Promise<string> {
@@ -150,12 +167,16 @@ export class DxfConversionService {
       this.logger.log(`Starting PDF to DXF conversion: ${pdfPath}`);
       const command = `inkscape --export-type=dxf --export-filename="${outputPath}" "${pdfPath}"`;
 
-      const { stderr } = (await execAsync(command)) as {
+      const { stdout, stderr } = (await execAsync(command)) as {
         stdout: string;
         stderr: string;
       };
+      if (stdout) {
+        appendToToolLog('inkscape', 'dxf-export-stdout', stdout);
+      }
       if (stderr) {
         this.logger.warn(`Inkscape stderr: ${stderr}`);
+        appendToToolLog('inkscape', 'dxf-export-stderr', stderr);
       }
       this.logger.log(`Conversion completed: ${outputPath}`);
     } catch (error) {
@@ -207,18 +228,21 @@ export class DxfConversionService {
       layersSet.add(entity.layer || 'default');
 
       switch (entity.type) {
-        case 'LINE':
-          if (entity.vertices && entity.vertices.length >= 2) {
+        case 'LINE': {
+          const start = entity.vertices?.[0] ?? entity.startPoint;
+          const end = entity.vertices?.[1] ?? entity.endPoint;
+          if (start && end) {
             sortedEntities.push({
               type: 'LINE',
               layer: entity.layer || 'default',
-              startPoint: { x: entity.vertices[0].x, y: entity.vertices[0].y },
-              endPoint: { x: entity.vertices[1].x, y: entity.vertices[1].y },
+              startPoint: { x: start.x, y: start.y },
+              endPoint: { x: end.x, y: end.y },
             });
-            updateBounds(entity.vertices[0].x, entity.vertices[0].y);
-            updateBounds(entity.vertices[1].x, entity.vertices[1].y);
+            updateBounds(start.x, start.y);
+            updateBounds(end.x, end.y);
           }
           break;
+        }
         case 'LWPOLYLINE':
         case 'POLYLINE':
           if (entity.vertices && entity.vertices.length > 0) {
@@ -276,8 +300,14 @@ export class DxfConversionService {
       dxf.entities.forEach(processEntity);
     }
 
+    const total = sortedEntities.length;
+    const capped = total > MAX_ENTITIES_RESPONSE;
+    const entities = capped
+      ? sortedEntities.slice(0, MAX_ENTITIES_RESPONSE)
+      : sortedEntities;
+
     return {
-      entities: sortedEntities,
+      entities,
       layers: Array.from(layersSet),
       bounds: {
         minX: minX === Infinity ? 0 : minX,
@@ -285,6 +315,10 @@ export class DxfConversionService {
         maxX: maxX === -Infinity ? 100 : maxX,
         maxY: maxY === -Infinity ? 100 : maxY,
       },
+      ...(capped && {
+        entityCountTotal: total,
+        capped: true,
+      }),
     };
   }
 }

@@ -1,0 +1,131 @@
+<div
+  class="editor-toolbar flex flex-column gap-0 bg-white border-bottom-1 border-100 shadow-1"
+>
+  <!-- Row 1: Browser-like Tabs -->
+  <div class="tabs-bar flex align-items-end px-2 border-bottom-1 border-50">
+    @for (tab of store.tabs(); track tab.id) {
+      <div
+        class="tab-item flex align-items-center px-3 py-1 cursor-pointer relative"
+        role="tab"
+        tabindex="0"
+        [class.active]="tab.id === store.activeTabId()"
+        (click)="store.setActiveTab(tab.id)"
+        (keydown.enter)="store.setActiveTab(tab.id)"
+        (keydown.space)="store.setActiveTab(tab.id); $event.preventDefault()"
+        (contextmenu)="
+          tabMenu.toggle($event);
+          selectedTabId = tab.id;
+          $event.preventDefault()
+        "
+      >
+        <span class="tab-name text-xs font-medium mr-2">{{ tab.name }}</span>
+        @if (store.tabs().length > 1) {
+          <button
+            type="button"
+            class="tab-close-btn p-0 border-none bg-transparent cursor-pointer"
+            aria-label="Zamknij kartę"
+            (click)="$event.stopPropagation(); store.removeTab(tab.id)"
+          >
+            <i class="pi pi-times tab-close"></i>
+          </button>
+        }
+      </div>
+    }
+    <button
+      type="button"
+      class="add-tab-btn"
+      (click)="store.addTab('Nowa strona')"
+      [pTooltip]="'Nowa strona'"
+      tooltipPosition="bottom"
+      aria-label="Dodaj nową stronę"
+    >
+      <i class="pi pi-plus"></i>
+    </button>
+  </div>
+
+  <p-menu #tabMenu [model]="tabMenuItems" [popup]="true"></p-menu>
+
+  <!-- Row 2: Main Tools -->
+  <div class="flex align-items-center gap-2 p-2 w-full">
+    <!-- Tools -->
+    <app-tool-buttons></app-tool-buttons>
+
+    <p-divider layout="vertical"></p-divider>
+
+    <!-- Zoom controls -->
+    <app-zoom-controls></app-zoom-controls>
+
+    <p-divider layout="vertical"></p-divider>
+
+    <!-- Grid & Snap -->
+    <app-grid-controls></app-grid-controls>
+
+    <p-divider layout="vertical"></p-divider>
+
+    <!-- Canvas Rotation -->
+    <div class="rotation-controls flex gap-1">
+      <p-button
+        icon="pi pi-undo"
+        [text]="true"
+        [rounded]="true"
+        (click)="rotateCanvasLeft.emit()"
+        [pTooltip]="'editor.actions.rotateLeft' | transloco"
+        tooltipPosition="bottom"
+      ></p-button>
+      <p-button
+        icon="pi pi-refresh"
+        [text]="true"
+        [rounded]="true"
+        (click)="rotateCanvasRight.emit()"
+        [pTooltip]="'editor.actions.rotateRight' | transloco"
+        tooltipPosition="bottom"
+      ></p-button>
+    </div>
+
+    <!-- Spacer -->
+    <div class="flex-grow-1"></div>
+
+    <!-- Export Button -->
+    <p-button
+      [label]="'editor.actions.exportSelected' | transloco"
+      icon="pi pi-external-link"
+      [text]="false"
+      [outlined]="true"
+      [rounded]="true"
+      severity="secondary"
+      [disabled]="store.selectedIds().length === 0"
+      [pTooltip]="'editor.tooltips.exportSelected' | transloco"
+      tooltipPosition="bottom"
+      (click)="store.exportToNewTab()"
+      class="mr-2"
+    ></p-button>
+
+    <!-- Projected Content (e.g. DXF toggle) -->
+    <ng-content></ng-content>
+
+    <p-divider layout="vertical"></p-divider>
+
+    <!-- Actions -->
+    <p-button
+      [label]="'common.save' | transloco"
+      icon="pi pi-save"
+      (click)="save.emit()"
+      class="font-bold"
+    ></p-button>
+
+    <!-- Info -->
+    <div
+      class="selection-info text-sm text-600 px-2 border-left-1 border-100 ml-2"
+    >
+      @if (store.selectedIds().length > 0) {
+        <span
+          >{{ "editor.selected" | transloco }}:
+          {{ store.selectedIds().length }}</span
+        >
+      }
+    </div>
+  </div>
+
+  <!-- Row 3: View Mode Bar -->
+  <app-view-mode-bar></app-view-mode-bar>
+</div>

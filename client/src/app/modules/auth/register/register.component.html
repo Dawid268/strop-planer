@@ -1,0 +1,147 @@
+<div
+  class="auth-container flex align-items-center justify-content-center min-h-screen p-4"
+  *transloco="let t"
+>
+  <p-card [header]="t('auth.registerSubtitle')" class="auth-card shadow-4">
+    <ng-template pTemplate="header">
+      <div class="flex align-items-center gap-3 p-4 pb-0">
+        <i class="pi pi-th-large text-primary text-4xl"></i>
+        <h1 class="text-2xl font-bold m-0 text-900">Szalunki Optimizer</h1>
+      </div>
+    </ng-template>
+
+    <form
+      (ngSubmit)="onSubmit()"
+      #registerForm="ngForm"
+      class="flex flex-column gap-3"
+    >
+      <div class="flex flex-column gap-1">
+        <label for="companyName" class="font-medium text-900">{{
+          t("auth.companyName")
+        }}</label>
+        <p-iconField iconPosition="right">
+          <p-inputIcon styleClass="pi pi-briefcase"></p-inputIcon>
+          <input
+            id="companyName"
+            pInputText
+            name="companyName"
+            [ngModel]="companyName()"
+            (ngModelChange)="companyName.set($event)"
+            required
+            minlength="2"
+            class="w-full"
+          />
+        </p-iconField>
+      </div>
+
+      <div class="flex flex-column gap-1">
+        <label for="email" class="font-medium text-900">{{
+          t("auth.email")
+        }}</label>
+        <p-iconField iconPosition="right">
+          <p-inputIcon styleClass="pi pi-envelope"></p-inputIcon>
+          <input
+            id="email"
+            pInputText
+            type="email"
+            name="email"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            required
+            email
+            class="w-full"
+          />
+        </p-iconField>
+      </div>
+
+      <div class="flex flex-column gap-1">
+        <label for="phone" class="font-medium text-900">{{
+          t("auth.phone")
+        }}</label>
+        <p-iconField iconPosition="right">
+          <p-inputIcon styleClass="pi pi-phone"></p-inputIcon>
+          <input
+            id="phone"
+            pInputText
+            type="tel"
+            name="phone"
+            [ngModel]="phone()"
+            (ngModelChange)="phone.set($event)"
+            class="w-full"
+          />
+        </p-iconField>
+      </div>
+
+      <div class="flex flex-column gap-1">
+        <label for="password" class="font-medium text-900">{{
+          t("auth.password")
+        }}</label>
+        <p-password
+          id="password"
+          [ngModel]="password()"
+          (ngModelChange)="password.set($event)"
+          name="password"
+          [toggleMask]="true"
+          required
+          minLength="6"
+          styleClass="w-full"
+          inputStyleClass="w-full"
+          [promptLabel]="t('auth.password')"
+          [weakLabel]="'Słabe'"
+          [mediumLabel]="'Średnie'"
+          [strongLabel]="'Silne'"
+        ></p-password>
+        <small class="text-color-secondary">{{
+          t("auth.passwordMinLength")
+        }}</small>
+      </div>
+
+      @if (store.error()) {
+        <p-message
+          severity="error"
+          [text]="t('auth.registerError')"
+          class="w-full mt-2"
+        ></p-message>
+      }
+      @if (success()) {
+        <p-message
+          severity="success"
+          [text]="t('auth.registerSuccess')"
+          class="w-full mt-2"
+        ></p-message>
+      }
+
+      <p-button
+        type="submit"
+        class="w-full mt-3"
+        [disabled]="!registerForm.valid || store.loading() || store.loaded()"
+        [loading]="store.loading()"
+      >
+        <ng-template pTemplate="content">
+          @if (store.loading()) {
+            <p-progressSpinner
+              styleClass="w-2rem h-2rem"
+              strokeWidth="4"
+            ></p-progressSpinner>
+          } @else {
+            <span class="w-full text-center font-bold">{{
+              t("auth.register")
+            }}</span>
+          }
+        </ng-template>
+      </p-button>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-content-end mt-2">
+        <a
+          pButton
+          routerLink="/login"
+          class="p-button-text p-button-sm"
+          [label]="t('auth.hasAccount') + ' ' + t('auth.login')"
+          [attr.aria-label]="t('auth.hasAccount') + ' ' + t('auth.login')"
+        ></a>
+      </div>
+    </ng-template>
+  </p-card>
+</div>

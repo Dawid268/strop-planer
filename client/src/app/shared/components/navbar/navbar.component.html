@@ -14,6 +14,7 @@
         routerLink="/dashboard"
         routerLinkActive="active"
         label="Dashboard"
+        aria-label="Dashboard"
         icon="pi pi-home"
         class="p-button-text p-button-sm text-white"
       ></a>
@@ -22,6 +23,7 @@
         routerLink="/projects"
         routerLinkActive="active"
         label="Projekty"
+        aria-label="Projekty"
         icon="pi pi-folder"
         class="p-button-text p-button-sm text-white"
       ></a>
@@ -30,6 +32,7 @@
         routerLink="/inventory"
         routerLinkActive="active"
         label="Magazyn"
+        aria-label="Magazyn"
         icon="pi pi-box"
         class="p-button-text p-button-sm text-white"
       ></a>
@@ -41,6 +44,7 @@
       pButton
       type="button"
       icon="pi pi-user"
+      aria-label="Menu użytkownika"
       (click)="userMenu.toggle($event)"
       class="p-button-rounded p-button-text text-white"
     ></button>

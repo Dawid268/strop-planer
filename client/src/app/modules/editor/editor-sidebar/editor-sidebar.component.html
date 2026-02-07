@@ -1,0 +1,163 @@
+<div
+  class="editor-sidebar flex flex-column h-full bg-white border-left-1 border-100 overflow-y-auto w-full"
+>
+  <p-accordion
+    [multiple]="true"
+    [value]="openedPanels()"
+    expandIcon="pi pi-chevron-down"
+    collapseIcon="pi pi-chevron-up"
+  >
+    <!-- Tabs (Pages) Panel -->
+    <p-accordion-panel value="tabs">
+      <p-accordion-header>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-file"></i>
+          <span class="font-medium">Strony</span>
+          <span class="text-xs text-500">({{ store.tabs().length }})</span>
+        </div>
+      </p-accordion-header>
+      <p-accordion-content>
+        <app-tabs-panel
+          (openNewTabDialog)="openNewTabDialog()"
+        ></app-tabs-panel>
+      </p-accordion-content>
+    </p-accordion-panel>
+
+    <!-- Layers Panel -->
+    <p-accordion-panel value="layers">
+      <p-accordion-header>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-layers"></i>
+          <span class="font-medium">{{
+            "editor.sidebar.layers" | transloco
+          }}</span>
+          <span class="text-xs text-500"
+            >({{ store.activeLayers().length }})</span
+          >
+        </div>
+      </p-accordion-header>
+      <p-accordion-content>
+        <app-layers-panel
+          (openNewLayerDialog)="openNewLayerDialog()"
+        ></app-layers-panel>
+      </p-accordion-content>
+    </p-accordion-panel>
+
+    <!-- Properties Panel -->
+    <p-accordion-panel value="properties">
+      <p-accordion-header>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-sliders-h"></i>
+          <span class="font-medium">{{
+            "editor.sidebar.properties" | transloco
+          }}</span>
+        </div>
+      </p-accordion-header>
+      <p-accordion-content>
+        <app-properties-panel></app-properties-panel>
+      </p-accordion-content>
+    </p-accordion-panel>
+
+    <!-- Catalog Panel -->
+    <p-accordion-panel value="catalog">
+      <p-accordion-header>
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-box"></i>
+          <span class="font-medium">{{
+            "editor.sidebar.catalog" | transloco
+          }}</span>
+        </div>
+      </p-accordion-header>
+      <p-accordion-content>
+        <app-catalog-panel></app-catalog-panel>
+      </p-accordion-content>
+    </p-accordion-panel>
+  </p-accordion>
+
+  <!-- New Layer Dialog -->
+  <p-dialog
+    header="Nowa warstwa"
+    [(visible)]="showNewLayerDialog"
+    [modal]="true"
+    [style]="{ width: '350px' }"
+    [closable]="true"
+  >
+    <div class="flex flex-column gap-3">
+      <div class="flex flex-column gap-2">
+        <label for="layerName" class="text-sm font-medium">Nazwa warstwy</label>
+        <input
+          pInputText
+          id="layerName"
+          [ngModel]="newLayerName()"
+          (ngModelChange)="newLayerName.set($event)"
+          placeholder="np. Moje rysunki"
+          class="w-full"
+          (keyup.enter)="
+            store.selectedIds().length > 0 ? saveAsLayer() : createEmptyLayer()
+          "
+        />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button
+          label="Anuluj"
+          [text]="true"
+          severity="secondary"
+          (click)="showNewLayerDialog.set(false)"
+        ></p-button>
+        @if (store.selectedIds().length > 0) {
+          <p-button
+            label="Zapisz zaznaczenie"
+            icon="pi pi-save"
+            (click)="saveAsLayer()"
+            [disabled]="!newLayerName()"
+          ></p-button>
+        } @else {
+          <p-button
+            label="Utwórz pustą"
+            icon="pi pi-plus"
+            (click)="createEmptyLayer()"
+            [disabled]="!newLayerName()"
+          ></p-button>
+        }
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- New Tab Dialog -->
+  <p-dialog
+    header="Nowa strona"
+    [(visible)]="showNewTabDialog"
+    [modal]="true"
+    [style]="{ width: '350px' }"
+    [closable]="true"
+  >
+    <div class="flex flex-column gap-3">
+      <div class="flex flex-column gap-2">
+        <label for="tabName" class="text-sm font-medium">Nazwa strony</label>
+        <input
+          pInputText
+          id="tabName"
+          [ngModel]="newTabName()"
+          (ngModelChange)="newTabName.set($event)"
+          placeholder="np. Kondygnacja 1"
+          class="w-full"
+          (keyup.enter)="createNewTab()"
+        />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button
+          label="Anuluj"
+          [text]="true"
+          severity="secondary"
+          (click)="showNewTabDialog.set(false)"
+        ></p-button>
+        <p-button
+          label="Utwórz"
+          icon="pi pi-plus"
+          (click)="createNewTab()"
+          [disabled]="!newTabName()"
+        ></p-button>
+      </div>
+    </div>
+  </p-dialog>
+</div>

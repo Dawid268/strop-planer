@@ -7,7 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { AutoMap } from '@automapper/classes';
-import { FormworkProjectEntity } from './formwork-project.entity';
+import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.entity';
 
 @Entity('users')
 export class UserEntity {

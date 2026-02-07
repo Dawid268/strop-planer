@@ -7,8 +7,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { UserEntity } from './user.entity';
-import { SlabType } from '../../slab/enums/slab.enums';
+import { UserEntity } from '@/inventory/entities/user.entity';
+import { SlabType } from '@/slab/enums/slab.enums';
 import { AutoMap } from '@automapper/classes';
 
 @Entity('formwork_projects')
@@ -77,6 +77,18 @@ export class FormworkProjectEntity {
 
   @Column({ type: 'text', nullable: true })
   public geoJsonPath?: string;
+
+  /** Status ekstrakcji geometrii (zgodny z jobem): pending | processing | completed | failed */
+  @Column({ length: 20, nullable: true })
+  public extractionStatus?: string;
+
+  /** Aktualna / ostatnia numer próby ekstrakcji (1..N) */
+  @Column({ type: 'int', default: 0 })
+  public extractionAttempts!: number;
+
+  /** Ostatni komunikat z joba (błąd lub status) */
+  @Column({ type: 'text', nullable: true })
+  public extractionMessage?: string;
 
   // Relacja z użytkownikiem
   @ManyToOne(() => UserEntity, (user) => user.projects)

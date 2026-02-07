@@ -1,0 +1,116 @@
+<div
+  class="layer-item flex flex-column p-2 hover:bg-50 border-round transition-colors transition-duration-150 cursor-pointer"
+  role="button"
+  tabindex="0"
+  [class.bg-blue-50]="isActive()"
+  [class.border-blue-200]="isActive()"
+  [class.border-1]="isActive()"
+  (click)="store.setActiveLayer(layer().id)"
+  (keydown.enter)="store.setActiveLayer(layer().id)"
+  (keydown.space)="store.setActiveLayer(layer().id); $event.preventDefault()"
+>
+  <div class="flex align-items-center justify-content-between mb-2">
+    <div class="flex align-items-center gap-2">
+      @if (layer().color) {
+        <span
+          class="layer-color-badge"
+          [style.background-color]="layer().color"
+          style="
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+          "
+        ></span>
+      } @else {
+        <i [class]="'pi ' + getLayerIcon() + ' text-600'"></i>
+      }
+
+      @if (editingName()) {
+        <input
+          pInputText
+          [ngModel]="editingNameValue()"
+          (ngModelChange)="editingNameValue.set($event)"
+          (blur)="saveLayerName()"
+          (keyup.enter)="saveLayerName()"
+          class="p-inputtext-sm w-8rem"
+          (click)="$event.stopPropagation()"
+        />
+      } @else {
+        <span
+          class="text-sm font-medium"
+          [class.cursor-text]="isLayerEditable()"
+          (dblclick)="startEditingName(); $event.stopPropagation()"
+          >{{ layer().name }}</span
+        >
+      }
+
+      @let badge = getLayerTypeBadge();
+      <span class="text-xs px-2 py-1 border-round" [class]="badge.class">{{
+        badge.label
+      }}</span>
+
+      <span class="text-xs text-400"> ({{ layer().shapes.length }}) </span>
+    </div>
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+    <div
+      class="flex align-items-center gap-1"
+      (click)="$event.stopPropagation()"
+    >
+      <p-toggleswitch
+        [ngModel]="layer().isVisible"
+        (onChange)="store.toggleLayerVisibility(layer().id)"
+        pTooltip="Widoczność"
+        tooltipPosition="left"
+      ></p-toggleswitch>
+      <p-button
+        [icon]="layer().isLocked ? 'pi pi-lock' : 'pi pi-lock-open'"
+        [text]="true"
+        [severity]="layer().isLocked ? 'danger' : 'secondary'"
+        [rounded]="true"
+        size="small"
+        (click)="store.toggleLayerLock(layer().id)"
+        [pTooltip]="layer().isLocked ? 'Odblokuj' : 'Zablokuj'"
+      ></p-button>
+      @if (isLayerRemovable()) {
+        <p-button
+          icon="pi pi-ellipsis-v"
+          [text]="true"
+          severity="secondary"
+          [rounded]="true"
+          size="small"
+          (click)="onMenuOpen($event)"
+          pTooltip="Przenieś warstwę"
+          tooltipPosition="left"
+        ></p-button>
+        <p-button
+          icon="pi pi-trash"
+          [text]="true"
+          severity="danger"
+          [rounded]="true"
+          size="small"
+          (click)="store.deleteLayer(layer().id)"
+          pTooltip="Usuń warstwę"
+        ></p-button>
+      }
+    </div>
+  </div>
+
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+  <div
+    class="flex align-items-center gap-2 px-2 pb-1"
+    (click)="$event.stopPropagation()"
+  >
+    <i class="pi pi-sun text-400 text-xs"></i>
+    <p-slider
+      [ngModel]="displayOpacity() * 100"
+      (ngModelChange)="onOpacityChange($event)"
+      class="flex-grow-1"
+      [min]="0"
+      [max]="100"
+    ></p-slider>
+    <span class="text-xs text-500 font-mono w-2rem text-right">
+      {{ displayOpacity() * 100 | number: "1.0-0" }}%
+    </span>
+  </div>
+</div>

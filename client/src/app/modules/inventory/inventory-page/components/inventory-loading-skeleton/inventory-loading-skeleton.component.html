@@ -1,0 +1,24 @@
+<p-table [value]="rows" class="w-full">
+  <ng-template pTemplate="header">
+    <tr>
+      <th style="width: 4rem"></th>
+      <th>{{ "inventory.table.name" | transloco }}</th>
+      <th>{{ "inventory.table.type" | transloco }}</th>
+      <th>{{ "inventory.table.manufacturer" | transloco }}</th>
+      <th>{{ "inventory.table.dimensions" | transloco }}</th>
+      <th>{{ "inventory.table.available" | transloco }}</th>
+      <th style="width: 8rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body">
+    <tr>
+      <td><p-skeleton shape="circle" size="2rem"></p-skeleton></td>
+      <td><p-skeleton width="80%"></p-skeleton></td>
+      <td><p-skeleton width="60%"></p-skeleton></td>
+      <td><p-skeleton width="70%"></p-skeleton></td>
+      <td><p-skeleton width="90%"></p-skeleton></td>
+      <td><p-skeleton width="40%"></p-skeleton></td>
+      <td><p-skeleton width="100%"></p-skeleton></td>
+    </tr>
+  </ng-template>
+</p-table>

@@ -8,11 +8,14 @@ import {
   Param,
   UseGuards,
   BadRequestException,
+  InternalServerErrorException,
   Query,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 import {
   ApiTags,
   ApiOperation,
@@ -30,7 +33,7 @@ import {
   CreateProjectDto,
   UpdateProjectDto,
   ProjectResponseDto,
-} from './dto/project.dto';
+} from '@/projects/dto/project.dto';
 import { GetCurrentUserId } from '@/common/decorators';
 import {
   PaginationQueryDto,
@@ -45,7 +48,9 @@ import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.ent
 import {
   EditorData,
   ExtractedSlabGeometry,
-} from './interfaces/project.interface';
+} from '@/projects/interfaces/project.interface';
+import { DxfConversionService } from '@/floor-plan/dxf-conversion.service';
+import { FabricConverterService } from '@/projects/fabric-converter.service';
 
 /**
  * Projects Controller
@@ -59,7 +64,97 @@ export class ProjectsController {
   public constructor(
     private readonly projectsService: ProjectsService,
     private readonly formworkService: FormworkService,
+    private readonly dxfConversionService: DxfConversionService,
+    private readonly fabricConverterService: FabricConverterService,
   ) {}
+
+  /**
+   * Retry generating DXF/GeoJSON artifacts when project has sourcePdfPath but null dxfPath/geoJsonPath
+   */
+  @Post(':id/retry-artifacts')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Wznów generowanie artefaktów',
+    description:
+      'Ponawia konwersję PDF→DXF→JSON gdy projekt ma sourcePdfPath ale brak dxfPath/geoJsonPath (max 3 próby).',
+  })
+  @ApiParam({ name: 'id', description: 'UUID projektu', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Artefakty wygenerowane',
+    type: ProjectResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Brak PDF lub artefakty już istnieją',
+  })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
+  public async retryArtifacts(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetCurrentUserId() userId: string,
+  ): Promise<ProjectResponseDto> {
+    const project = await this.projectsService.findOne(id, userId);
+
+    if (!project.sourcePdfPath) {
+      throw new BadRequestException(
+        'Projekt nie ma zapisanego pliku PDF. Najpierw prześlij PDF (upload).',
+      );
+    }
+
+    if (project.dxfPath && project.geoJsonPath) {
+      return this.mapToResponse(project);
+    }
+
+    const absolutePdfPath = path.join(
+      process.cwd(),
+      project.sourcePdfPath.startsWith('/')
+        ? project.sourcePdfPath.slice(1)
+        : project.sourcePdfPath,
+    );
+
+    const documentId = path.parse(absolutePdfPath).name;
+    const uploadDir = path.dirname(absolutePdfPath);
+    const convertedDir = path.join(process.cwd(), 'uploads', 'converted');
+    const dxfPathAbs = path.join(uploadDir, `${documentId}.dxf`);
+    const jsonPathAbs = path.join(convertedDir, `${documentId}.json`);
+    const dxfPathRel = `/uploads/${documentId}.dxf`;
+    const jsonPathRel = `/uploads/converted/${documentId}.json`;
+
+    const MAX_ATTEMPTS = 3;
+    const RETRY_DELAY_MS = 1500;
+    let jsonData:
+      | Awaited<ReturnType<DxfConversionService['parseDxfFile']>>
+      | undefined;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        await this.dxfConversionService.convertPdfToDxf(
+          absolutePdfPath,
+          dxfPathAbs,
+        );
+        jsonData = await this.dxfConversionService.parseDxfFile(dxfPathAbs);
+        await fs.mkdir(convertedDir, { recursive: true });
+        await fs.writeFile(jsonPathAbs, JSON.stringify(jsonData, null, 2));
+        break;
+      } catch (err) {
+        if (attempt === MAX_ATTEMPTS) {
+          throw new InternalServerErrorException(
+            `Konwersja PDF→DXF nie powiodła się po ${MAX_ATTEMPTS} próbach. Sprawdź logi.`,
+          );
+        }
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      }
+    }
+
+    await this.projectsService.updateArtifactPaths(
+      id,
+      { dxfPath: dxfPathRel, geoJsonPath: jsonPathRel },
+      userId,
+    );
+
+    const updatedProject = await this.projectsService.findOne(id, userId);
+    return this.mapToResponse(updatedProject);
+  }
 
   /**
    * Get all projects with pagination
@@ -458,6 +553,35 @@ export class ProjectsController {
   }
 
   /**
+   * Get CAD data formatted for Fabric.js
+   */
+  @Get(':id/cad-data')
+  @ApiOperation({
+    summary: 'Pobierz dane CAD dla Fabric.js',
+    description:
+      'Konwertuje dane DXF na obiekty gotowe do wyświetlenia w Fabric.js.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID projektu', type: String })
+  @ApiResponse({ status: 200, description: 'Dane CAD dla Fabric.js' })
+  @ApiResponse({ status: 404, description: 'Projekt nie znaleziony' })
+  public async getCadData(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetCurrentUserId() userId: string,
+  ) {
+    const project = await this.projectsService.findOne(id, userId);
+
+    if (!project.dxfPath) {
+      throw new BadRequestException('Projekt nie posiada pliku DXF.');
+    }
+
+    const documentId = path.parse(project.dxfPath).name;
+    const dxfData =
+      await this.dxfConversionService.getFloorPlanData(documentId);
+
+    return this.fabricConverterService.convertToFabric(dxfData);
+  }
+
+  /**
    * Save editor data
    */
   @Put(':id/editor-data')
@@ -518,9 +642,13 @@ export class ProjectsController {
       editorData: p.editorData
         ? (JSON.parse(p.editorData) as EditorData)
         : undefined,
+      sourcePdfPath: p.sourcePdfPath,
       geoJsonPath: p.geoJsonPath,
       svgPath: p.svgPath,
       dxfPath: p.dxfPath,
+      extractionStatus: p.extractionStatus,
+      extractionAttempts: p.extractionAttempts,
+      extractionMessage: p.extractionMessage,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
     };

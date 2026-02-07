@@ -1,0 +1,133 @@
+<div class="inventory-page p-4 max-w-screen-xl mx-auto">
+  <header
+    class="page-header flex flex-column md:flex-row md:justify-content-between md:align-items-start gap-4 mb-5"
+  >
+    <div>
+      <h1 class="text-3xl font-medium text-900 m-0">
+        {{ "inventory.title" | transloco }}
+      </h1>
+      <p class="text-600 mt-2">
+        {{ "inventory.subtitle" | transloco }}
+      </p>
+    </div>
+    <div class="header-actions flex gap-2">
+      <p-button
+        [label]="'inventory.exportCsv' | transloco"
+        icon="pi pi-download"
+        [outlined]="true"
+        (click)="exportToCsv()"
+      ></p-button>
+      <p-button
+        [label]="'inventory.addItem' | transloco"
+        icon="pi pi-plus"
+        (click)="openAddDialog()"
+      ></p-button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <p-card class="filters-card shadow-1 mb-4 border-none">
+    <app-inventory-filters
+      [typeOptions]="typeOptions"
+      [manufacturerOptions]="manufacturerOptions"
+      [(searchQuery)]="searchQuery"
+      [(filterType)]="filterType"
+      [(filterManufacturer)]="filterManufacturer"
+      (searchChange)="applySearch()"
+      (filtersChange)="applyFilters()"
+    ></app-inventory-filters>
+  </p-card>
+
+  <!-- Table -->
+  <p-card class="table-card shadow-2 border-none">
+    @if (store.loading()) {
+      <app-inventory-loading-skeleton></app-inventory-loading-skeleton>
+    } @else {
+      <p-table
+        [value]="filteredItems()"
+        [(selection)]="selectedItems"
+        dataKey="id"
+        [paginator]="true"
+        [rows]="10"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 4rem">
+              <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+            </th>
+            <th pSortableColumn="name">
+              {{ "inventory.table.name" | transloco }}
+              <p-sortIcon field="name"></p-sortIcon>
+            </th>
+            <th pSortableColumn="type">
+              {{ "inventory.table.type" | transloco }}
+              <p-sortIcon field="type"></p-sortIcon>
+            </th>
+            <th pSortableColumn="manufacturer">
+              {{ "inventory.table.manufacturer" | transloco }}
+              <p-sortIcon field="manufacturer"></p-sortIcon>
+            </th>
+            <th>{{ "inventory.table.dimensions" | transloco }}</th>
+            <th pSortableColumn="quantityAvailable">
+              {{ "inventory.table.available" | transloco }}
+              <p-sortIcon field="quantityAvailable"></p-sortIcon>
+            </th>
+            <th style="width: 8rem"></th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>
+              <p-tableCheckbox [value]="item"></p-tableCheckbox>
+            </td>
+            <td class="font-bold">{{ item.name }}</td>
+            <td>
+              <p-tag
+                [severity]="getTypeSeverity(item.type)"
+                [value]="getTypeLabel(item.type) | transloco"
+              ></p-tag>
+            </td>
+            <td>{{ item.manufacturer }}</td>
+            <td>{{ formatDimensions(item.dimensions) }}</td>
+            <td>
+              <span
+                class="font-medium"
+                [class.text-green-600]="
+                  item.quantityAvailable - item.quantityReserved > 0
+                "
+              >
+                {{ item.quantityAvailable - item.quantityReserved }}
+              </span>
+              <span class="text-600"> / {{ item.quantityAvailable }}</span>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-text p-button-rounded p-button-sm"
+                  aria-label="Edytuj element"
+                  (click)="editItem(item)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-rounded p-button-danger p-button-sm"
+                  aria-label="Usuń element"
+                  (click)="deleteItem(item.id)"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+</div>
+<p-confirmDialog
+  [header]="'projects.confirmDeleteHeader' | transloco"
+  icon="pi pi-exclamation-triangle"
+></p-confirmDialog>
+<p-toast></p-toast>

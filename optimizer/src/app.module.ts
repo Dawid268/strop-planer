@@ -1,4 +1,9 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import {
+  Module,
+  MiddlewareConsumer,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -16,17 +21,17 @@ import {
   getLoggerConfig,
 } from '@config/index';
 import { CorrelationIdMiddleware } from '@common/middleware';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PdfModule } from './pdf/pdf.module';
-import { FormworkModule } from './formwork/formwork.module';
-import { SlabModule } from './slab/slab.module';
-import { InventoryModule } from './inventory/inventory.module';
-import { CustomersModule } from './customers/customers.module';
-import { RentalsModule } from './rentals/rentals.module';
-import { AuthModule } from './auth/auth.module';
-import { ProjectsModule } from './projects/projects.module';
-import { FloorPlanModule } from './floor-plan/floor-plan.module';
+import { AppController } from '@/app.controller';
+import { AppService } from '@/app.service';
+import { PdfModule } from '@/pdf/pdf.module';
+import { FormworkModule } from '@/formwork/formwork.module';
+import { SlabModule } from '@/slab/slab.module';
+import { InventoryModule } from '@/inventory/inventory.module';
+import { CustomersModule } from '@/customers/customers.module';
+import { RentalsModule } from '@/rentals/rentals.module';
+import { AuthModule } from '@/auth/auth.module';
+import { ProjectsModule } from '@/projects/projects.module';
+import { FloorPlanModule } from '@/floor-plan/floor-plan.module';
 
 @Module({
   imports: [
@@ -74,6 +79,8 @@ import { FloorPlanModule } from './floor-plan/floor-plan.module';
             configService.get('UPLOADS_PATH', './uploads'),
           ),
           serveRoot: '/uploads',
+          // Use new path-to-regexp syntax to avoid deprecation warnings
+          exclude: ['/api/{*path}'],
         },
       ],
     }),
@@ -105,6 +112,8 @@ export class AppModule implements NestModule {
    * Configure middleware for all routes
    */
   public configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+    consumer
+      .apply(CorrelationIdMiddleware)
+      .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
   }
 }

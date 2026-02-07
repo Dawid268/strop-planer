@@ -3,8 +3,8 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AUTH_CONSTANTS } from '../constants/auth.constants';
-import { JwtPayload } from './jwt.strategy';
+import { AUTH_CONSTANTS } from '@/auth/constants/auth.constants';
+import { JwtPayload } from '@/auth/strategies/jwt.strategy';
 
 /**
  * Refresh token user with token attached

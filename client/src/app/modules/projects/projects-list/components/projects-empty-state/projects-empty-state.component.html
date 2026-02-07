@@ -1,0 +1,18 @@
+<div
+  class="empty-state flex flex-column align-items-center justify-content-center p-8 text-center"
+>
+  <i class="pi pi-folder-open text-7xl text-300 mb-4"></i>
+  <h3 class="text-2xl font-bold text-900 m-0 mb-2">
+    {{ "projects.noProjects" | transloco }}
+  </h3>
+  <p class="text-600 m-0 mb-4 px-4">
+    {{ "projects.noProjectsDesc" | transloco }}
+  </p>
+  <button
+    pButton
+    [label]="'projects.createFirstProject' | transloco"
+    [attr.aria-label]="'projects.createFirstProject' | transloco"
+    icon="pi pi-plus"
+    (click)="createProject.emit()"
+  ></button>
+</div>

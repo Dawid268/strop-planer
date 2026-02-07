@@ -1,0 +1,35 @@
+<p-selectButton
+  [options]="toolOptions"
+  [ngModel]="store.activeTool()"
+  (ngModelChange)="setTool($event)"
+  optionValue="value"
+  class="tool-group"
+>
+  <ng-template pTemplate="item" let-item>
+    <i
+      [class]="item.icon"
+      [pTooltip]="item.tooltipKey | transloco"
+      tooltipPosition="bottom"
+    ></i>
+  </ng-template>
+</p-selectButton>
+
+<p-button
+  icon="pi pi-wand"
+  [text]="true"
+  [rounded]="true"
+  [pTooltip]="'editor.actions.autoLayout' | transloco"
+  tooltipPosition="bottom"
+  (click)="generateAutoLayout()"
+  [disabled]="!store.allShapes().length"
+></p-button>
+
+<p-button
+  icon="pi pi-qrcode"
+  [text]="true"
+  [rounded]="true"
+  [pTooltip]="'editor.actions.autoTrace' | transloco"
+  tooltipPosition="bottom"
+  (click)="autoTracePdf()"
+  [disabled]="!store.backgroundUrl || !store.backgroundUrl()"
+></p-button>

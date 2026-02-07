@@ -21,18 +21,25 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["src/*"],
       "@app/*": ["src/app/*"],
       "@core/*": ["src/app/core/*"],
+      "@api/*": ["src/app/core/api/*"],
+      "@services/*": ["src/app/core/services/*"],
+      "@guards/*": ["src/app/core/guards/*"],
+      "@interceptors/*": ["src/app/core/interceptors/*"],
+      "@handlers/*": ["src/app/core/handlers/*"],
+      "@i18n/*": ["src/app/core/i18n/*"],
+      "@stores/*": ["src/app/stores/*"],
+      "@modules/*": ["src/app/modules/*"],
       "@shared/*": ["src/app/shared/*"],
-      "@state/*": ["src/app/state/*"],
-      "@features/*": ["src/app/features/*"],
-      "@models/*": ["src/app/models/*"],
-      "@config/*": ["src/app/config/*"],
-      "@common/*": ["src/app/common/*"],
-      "@env/*": ["src/environments/*"]
+      "@models/*": ["src/app/shared/models/*"],
+      "@utils/*": ["src/app/shared/utils/*"],
+      "@env/*": ["src/environments/*"],
+      "jsdom": ["src/polyfills/jsdom-polyfill.ts"]
     }
   },
   "angularCompilerOptions": {

@@ -1,0 +1,42 @@
+@if (!store.activeTabId()) {
+  <p class="text-sm text-600 text-center py-4 italic">
+    Wybierz stronę, aby zobaczyć warstwy
+  </p>
+} @else {
+  <div class="flex gap-2 mb-3">
+    <p-button
+      icon="pi pi-plus"
+      label="Nowa warstwa"
+      [text]="true"
+      [outlined]="true"
+      size="small"
+      (click)="onNewLayerClick()"
+    ></p-button>
+  </div>
+
+  <div class="flex flex-column gap-1">
+    @for (layer of store.activeLayers(); track layer.id) {
+      <app-layer-item
+        [layer]="layer"
+        [displayOpacity]="getDisplayOpacity(layer)"
+        [isActive]="store.activeLayerId() === layer.id"
+        (opacityChange)="onOpacityChange($event)"
+        (openMenu)="onLayerMenuOpen($event)"
+      ></app-layer-item>
+    }
+  </div>
+
+  <p-menu
+    #layerMenu
+    [model]="getLayerMenuItems()"
+    [popup]="true"
+    appendTo="body"
+  ></p-menu>
+
+  @if (store.selectedIds().length > 0) {
+    <app-selection-actions
+      [editableLayers]="getEditableLayers()"
+      (openNewLayerDialog)="onNewLayerClick()"
+    ></app-selection-actions>
+  }
+}

@@ -174,7 +174,11 @@
       "noSelection": "No selection",
       "propType": "Type",
       "propRotation": "Rotation",
-      "selectedCount": "Selected {{count}} items"
+      "selectedCount": "Selected {{count}} items",
+      "moveLayerToPage": "Move to page…",
+      "createNewPage": "Create new page",
+      "newPageName": "New page",
+      "noOtherPages": "No other pages"
     },
     "tools": {
       "select": "Select (V)",

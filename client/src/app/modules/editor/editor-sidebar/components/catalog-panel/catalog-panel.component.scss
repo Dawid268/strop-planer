@@ -1,0 +1,10 @@
+.catalog-item {
+  &:hover {
+    background-color: var(--surface-100);
+  }
+
+  &:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+}

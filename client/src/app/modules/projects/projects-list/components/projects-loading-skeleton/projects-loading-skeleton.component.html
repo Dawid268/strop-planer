@@ -1,0 +1,20 @@
+<p-table [value]="rows" class="w-full">
+  <ng-template pTemplate="header">
+    <tr>
+      <th style="width: 40%">{{ "projects.table.name" | transloco }}</th>
+      <th>{{ "projects.table.status" | transloco }}</th>
+      <th>{{ "projects.table.area" | transloco }}</th>
+      <th>{{ "projects.table.updated" | transloco }}</th>
+      <th style="width: 4rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body">
+    <tr>
+      <td><p-skeleton width="70%"></p-skeleton></td>
+      <td><p-skeleton width="50%"></p-skeleton></td>
+      <td><p-skeleton width="40%"></p-skeleton></td>
+      <td><p-skeleton width="60%"></p-skeleton></td>
+      <td><p-skeleton shape="circle" size="2rem"></p-skeleton></td>
+    </tr>
+  </ng-template>
+</p-table>

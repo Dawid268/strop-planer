@@ -11,7 +11,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AutoMap } from '@automapper/classes';
-import { ItemType, ItemCondition } from '../enums/inventory.enums';
+import { ItemType, ItemCondition } from '@/inventory/enums/inventory.enums';
 
 export class InventoryDimensionsDto {
   @AutoMap()

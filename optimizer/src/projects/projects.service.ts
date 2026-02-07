@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { FormworkProjectEntity } from '@/inventory/entities/formwork-project.entity';
-import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
-import { SlabType } from '../slab/enums/slab.enums';
+import { CreateProjectDto, UpdateProjectDto } from '@/projects/dto/project.dto';
+import { SlabType } from '@/slab/enums/slab.enums';
 import { PROJECT_STATUS, PAGINATION } from '@common/constants';
 
 @Injectable()

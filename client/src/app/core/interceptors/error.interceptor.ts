@@ -1,7 +1,7 @@
-import { HttpErrorResponse, HttpInterceptorFn } from "@angular/common/http";
-import { inject } from "@angular/core";
-import { catchError, retry, throwError, timer } from "rxjs";
-import { ErrorHandlerService } from "../services/error-handler.service";
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, retry, throwError, timer } from 'rxjs';
+import { ErrorHandlerService } from '@core/services/error-handler.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const errorHandler = inject(ErrorHandlerService);

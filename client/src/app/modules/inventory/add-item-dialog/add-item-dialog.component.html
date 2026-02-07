@@ -1,0 +1,227 @@
+<div class="flex flex-column gap-3 p-1">
+  <div class="grid">
+    <div class="col-12 md:col-6">
+      <div class="flex flex-column gap-2">
+        <label for="catalogCode" class="font-medium text-900">{{
+          "inventory.form.catalogCode" | transloco
+        }}</label>
+        <input
+          id="catalogCode"
+          pInputText
+          [(ngModel)]="item.catalogCode"
+          class="w-full"
+          [placeholder]="'inventory.form.catalogCode' | transloco"
+        />
+      </div>
+    </div>
+    <div class="col-12 md:col-6">
+      <div class="flex flex-column gap-2">
+        <label for="name" class="font-medium text-900">{{
+          "inventory.form.name" | transloco
+        }}</label>
+        <input
+          id="name"
+          pInputText
+          [(ngModel)]="item.name"
+          class="w-full"
+          [placeholder]="'inventory.form.name' | transloco"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-12 md:col-6">
+      <div class="flex flex-column gap-2">
+        <label for="type" class="font-medium text-900">{{
+          "inventory.form.type" | transloco
+        }}</label>
+        <p-select
+          id="type"
+          [options]="typeOptions"
+          [(ngModel)]="item.type"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+        >
+          <ng-template pTemplate="label" let-item>
+            {{ item.label | transloco }}
+          </ng-template>
+          <ng-template pTemplate="item" let-item>
+            {{ item.label | transloco }}
+          </ng-template>
+        </p-select>
+      </div>
+    </div>
+    <div class="col-12 md:col-6">
+      <div class="flex flex-column gap-2">
+        <label for="condition" class="font-medium text-900">{{
+          "inventory.form.condition" | transloco
+        }}</label>
+        <p-select
+          id="condition"
+          [options]="conditionOptions"
+          [(ngModel)]="item.condition"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+        >
+          <ng-template pTemplate="label" let-item>
+            {{ item.label | transloco }}
+          </ng-template>
+          <ng-template pTemplate="item" let-item>
+            {{ item.label | transloco }}
+          </ng-template>
+        </p-select>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-12 md:col-6">
+      <div class="flex flex-column gap-2">
+        <label for="manufacturer" class="font-medium text-900">{{
+          "inventory.form.manufacturer" | transloco
+        }}</label>
+        <p-select
+          id="manufacturer"
+          [options]="manufacturerOptions"
+          [(ngModel)]="item.manufacturer"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full"
+        ></p-select>
+      </div>
+    </div>
+    <div class="col-12 md:col-6">
+      <div class="flex flex-column gap-2">
+        <label for="system" class="font-medium text-900">{{
+          "inventory.form.system" | transloco
+        }}</label>
+        <input
+          id="system"
+          pInputText
+          [(ngModel)]="item.system"
+          class="w-full"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="surface-50 p-3 border-round border-1 border-200">
+    <h3 class="text-sm font-bold text-900 mt-0 mb-3">
+      {{ "inventory.form.dimensions.title" | transloco }} (mm)
+    </h3>
+    <div class="grid">
+      <div class="col-4">
+        <div class="flex flex-column gap-1">
+          <label for="dim-length" class="text-xs text-600">{{
+            "inventory.form.dimensions.length" | transloco
+          }}</label>
+          <p-inputNumber
+            inputId="dim-length"
+            [(ngModel)]="item.dimensions.length"
+            [showButtons]="false"
+            class="w-full"
+          ></p-inputNumber>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="flex flex-column gap-1">
+          <label for="dim-width" class="text-xs text-600">{{
+            "inventory.form.dimensions.width" | transloco
+          }}</label>
+          <p-inputNumber
+            inputId="dim-width"
+            [(ngModel)]="item.dimensions.width"
+            [showButtons]="false"
+            class="w-full"
+          ></p-inputNumber>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="flex flex-column gap-1">
+          <label for="dim-height" class="text-xs text-600">{{
+            "inventory.form.dimensions.height" | transloco
+          }}</label>
+          <p-inputNumber
+            inputId="dim-height"
+            [(ngModel)]="item.dimensions.height"
+            [showButtons]="false"
+            class="w-full"
+          ></p-inputNumber>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col-12 md:col-4">
+      <div class="flex flex-column gap-2">
+        <label for="quantity" class="font-medium text-900">{{
+          "inventory.form.quantity" | transloco
+        }}</label>
+        <p-inputNumber
+          id="quantity"
+          [(ngModel)]="item.quantityAvailable"
+          [showButtons]="true"
+          [min]="1"
+          class="w-full"
+        ></p-inputNumber>
+      </div>
+    </div>
+    <div class="col-12 md:col-4">
+      <div class="flex flex-column gap-2">
+        <label for="weight" class="font-medium text-900"
+          >{{ "inventory.form.weight" | transloco }} (kg)</label
+        >
+        <p-inputNumber
+          id="weight"
+          [(ngModel)]="item.weight"
+          [showButtons]="false"
+          [min]="0"
+          mode="decimal"
+          [minFractionDigits]="2"
+          class="w-full"
+        ></p-inputNumber>
+      </div>
+    </div>
+    <div class="col-12 md:col-4">
+      <div class="flex flex-column gap-2">
+        <label for="price" class="font-medium text-900">{{
+          "inventory.form.dailyRentPrice" | transloco
+        }}</label>
+        <p-inputNumber
+          id="price"
+          [(ngModel)]="item.dailyRentPrice"
+          [showButtons]="false"
+          [min]="0"
+          mode="currency"
+          currency="PLN"
+          locale="pl-PL"
+          class="w-full"
+        ></p-inputNumber>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-content-end gap-2 mt-4">
+    <button
+      pButton
+      type="button"
+      [label]="'common.cancel' | transloco"
+      [attr.aria-label]="'common.cancel' | transloco"
+      class="p-button-text p-button-secondary font-bold"
+      (click)="ref.close()"
+    ></button>
+    <button
+      pButton
+      type="button"
+      [label]="(isEdit ? 'common.save' : 'common.add') | transloco"
+      [attr.aria-label]="(isEdit ? 'common.save' : 'common.add') | transloco"
+      class="font-bold px-4"
+      (click)="submit()"
+      [disabled]="!isValid()"
+    ></button>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+@if (store.selectedShapes().length === 0) {
+  <p class="m-0 text-sm text-600 text-center py-4 italic">
+    {{ "editor.sidebar.noSelection" | transloco }}
+  </p>
+} @else if (store.selectedShapes().length === 1) {
+  @let shape = store.selectedShapes()[0];
+  <div class="flex flex-column gap-3">
+    <div class="flex justify-content-between align-items-center text-sm">
+      <span class="text-600">{{ "editor.sidebar.propType" | transloco }}:</span>
+      <span class="font-bold text-900">{{ shape.type }}</span>
+    </div>
+    <div class="flex justify-content-between align-items-center text-sm">
+      <span class="text-600">X:</span>
+      <span class="font-bold text-900 font-mono"
+        >{{ shape.x | number: "1.0-0" }} mm</span
+      >
+    </div>
+    <div class="flex justify-content-between align-items-center text-sm">
+      <span class="text-600">Y:</span>
+      <span class="font-bold text-900 font-mono"
+        >{{ shape.y | number: "1.0-0" }} mm</span
+      >
+    </div>
+    <div class="flex justify-content-between align-items-center text-sm">
+      <span class="text-600"
+        >{{ "editor.sidebar.propRotation" | transloco }}:</span
+      >
+      <span class="font-bold text-900 font-mono">{{ shape.rotation }}°</span>
+    </div>
+  </div>
+} @else {
+  <p class="m-0 text-sm text-600 text-center py-4">
+    {{
+      "editor.sidebar.selectedCount"
+        | transloco: { count: store.selectedShapes().length }
+    }}
+  </p>
+}

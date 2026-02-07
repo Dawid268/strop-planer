@@ -7,8 +7,8 @@ import {
   MappingProfile,
 } from '@automapper/core';
 import { Injectable } from '@nestjs/common';
-import { InventoryItemEntity } from '../entities/inventory-item.entity';
-import { CreateInventoryItemDto, InventoryItemDto } from '../dto/inventory.dto';
+import { InventoryItemEntity } from '@/inventory/entities/inventory-item.entity';
+import { CreateInventoryItemDto, InventoryItemDto } from '@/inventory/dto/inventory.dto';
 
 @Injectable()
 export class InventoryProfile extends AutomapperProfile {

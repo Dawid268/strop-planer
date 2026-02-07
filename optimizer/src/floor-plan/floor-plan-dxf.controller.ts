@@ -18,10 +18,10 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { diskStorage } from 'multer';
-import { DxfConversionService, DxfData } from './dxf-conversion.service';
+import { DxfConversionService, DxfData } from '@/floor-plan/dxf-conversion.service';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { FLOOR_PLAN_CONSTANTS } from './constants/floor-plan.constants';
+import { FLOOR_PLAN_CONSTANTS } from '@/floor-plan/constants/floor-plan.constants';
 
 @ApiTags('Floor Plans DXF')
 @Controller({ version: '1', path: 'floor-plans-dxf' })

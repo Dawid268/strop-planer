@@ -14,7 +14,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { JwtGuard } from '../auth/guards';
+import { JwtGuard } from '@/auth/guards';
 import {
   IsString,
   IsNumber,
@@ -24,14 +24,14 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-import { FormworkService } from './formwork.service';
+import { FormworkService } from '@/formwork/formwork.service';
 import type {
   FormworkLayout,
   FormworkCalculationParams,
   OptimizationResult,
-} from './interfaces/formwork.interface';
-import { SlabData } from '../slab/interfaces/slab.interface';
-import { SlabDataDto } from '../slab/dto/slab.dto';
+} from '@/formwork/interfaces/formwork.interface';
+import { SlabData } from '@/slab/interfaces/slab.interface';
+import { SlabDataDto } from '@/slab/dto/slab.dto';
 import { FORMWORK_SYSTEMS_LIST } from '@common/constants';
 
 class CalculateFormworkDto implements FormworkCalculationParams {

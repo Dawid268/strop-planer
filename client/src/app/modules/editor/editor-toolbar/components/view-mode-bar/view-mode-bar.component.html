@@ -1,0 +1,32 @@
+@if (store.isSlabDefined()) {
+  <div
+    class="w-full flex justify-content-center align-items-center gap-3 bg-gray-50 border-top-1 border-200 p-1"
+  >
+    <p-selectButton
+      [options]="viewModeOptions"
+      [ngModel]="store.viewMode()"
+      (ngModelChange)="setViewMode($event)"
+      optionLabel="label"
+      optionValue="value"
+    >
+      <ng-template pTemplate="item" let-item>
+        <i [class]="item.icon" class="mr-2"></i>
+        <span class="font-medium">{{ item.labelKey | transloco }}</span>
+      </ng-template>
+    </p-selectButton>
+
+    @if (store.viewMode() === "slab") {
+      <p-button
+        [label]="'editor.actions.generateOptimal' | transloco"
+        icon="pi pi-cog"
+        [text]="false"
+        [outlined]="false"
+        [rounded]="true"
+        severity="success"
+        [pTooltip]="'editor.tooltips.generateOptimal' | transloco"
+        tooltipPosition="bottom"
+        (click)="generateOptimalLayout()"
+      ></p-button>
+    }
+  </div>
+}

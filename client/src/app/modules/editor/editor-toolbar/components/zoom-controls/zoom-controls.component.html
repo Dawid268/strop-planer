@@ -1,0 +1,31 @@
+<div class="zoom-controls flex align-items-center gap-1">
+  <p-button
+    icon="pi pi-minus"
+    [text]="true"
+    [rounded]="true"
+    (click)="zoomOut()"
+    [pTooltip]="'editor.actions.zoomOut' | transloco"
+    tooltipPosition="bottom"
+  ></p-button>
+  <span
+    class="zoom-label text-sm text-600 font-medium px-2 min-w-4rem text-center"
+  >
+    {{ store.zoom() * 100 | number: "1.0-0" }}%
+  </span>
+  <p-button
+    icon="pi pi-plus"
+    [text]="true"
+    [rounded]="true"
+    (click)="zoomIn()"
+    [pTooltip]="'editor.actions.zoomIn' | transloco"
+    tooltipPosition="bottom"
+  ></p-button>
+  <p-button
+    icon="pi pi-expand"
+    [text]="true"
+    [rounded]="true"
+    (click)="resetView()"
+    [pTooltip]="'editor.actions.fitToScreen' | transloco"
+    tooltipPosition="bottom"
+  ></p-button>
+</div>

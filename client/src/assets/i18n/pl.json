@@ -206,7 +206,11 @@
       "noSelection": "Brak zaznaczenia",
       "propType": "Typ",
       "propRotation": "Rotacja",
-      "selectedCount": "Zaznaczono {{count}} elementów"
+      "selectedCount": "Zaznaczono {{count}} elementów",
+      "moveLayerToPage": "Przenieś do strony…",
+      "createNewPage": "Utwórz nową stronę",
+      "newPageName": "Nowa strona",
+      "noOtherPages": "Brak innych stron"
     },
     "tools": {
       "select": "Zaznacz (V)",
@@ -214,8 +218,10 @@
       "addPanel": "Dodaj panel szalunkowy (P)",
       "addProp": "Dodaj podporę (S)",
       "drawBeam": "Rysuj belkę (B)",
-      "drawPolygon": "Rysuj strop (Wielokąt)",
-      "traceSlab": "Obrysuj Strop (Marker z Snappingiem - M)"
+      "drawPolygon": "Rysuj wielokąt",
+      "drawSlab": "Definiuj Strop (Ręcznie)",
+      "autoTraceSlab": "Definiuj Strop (Automatycznie)",
+      "traceSlab": "Obrysuj Strop (Snapping)"
     },
     "viewModes": {
       "full": "Pełny Plan",

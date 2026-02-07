@@ -23,19 +23,19 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 
-import { InventoryService } from './inventory.service';
-import { JwtGuard } from '../auth/guards';
+import { InventoryService } from '@/inventory/inventory.service';
+import { JwtGuard } from '@/auth/guards';
 import {
   CreateInventoryItemDto,
   UpdateInventoryItemDto,
   InventoryFilterDto,
   InventoryItemDto,
-} from './dto/inventory.dto';
-import { InventorySummary } from './interfaces/inventory.interface';
+} from '@/inventory/dto/inventory.dto';
+import { InventorySummary } from '@/inventory/interfaces/inventory.interface';
 import {
   PaginationQueryDto,
   PaginatedResponse,
-} from '../common/dto/pagination.dto';
+} from '@/common/dto/pagination.dto';
 
 /**
  * Inventory Controller

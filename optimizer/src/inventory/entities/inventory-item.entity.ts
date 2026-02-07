@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { AutoMap } from '@automapper/classes';
-import { ItemType, ItemCondition } from '../enums/inventory.enums';
+import { ItemType, ItemCondition } from '@/inventory/enums/inventory.enums';
 
 @Entity('inventory_items')
 export class InventoryItemEntity {

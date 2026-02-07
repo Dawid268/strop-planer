@@ -1,16 +1,16 @@
-import { Component, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
-import { RouterLink, RouterLinkActive } from "@angular/router";
-import { ToolbarModule } from "primeng/toolbar";
-import { ButtonModule } from "primeng/button";
-import { MenuModule } from "primeng/menu";
-import { DividerModule } from "primeng/divider";
-import { MenuItem } from "primeng/api";
-import { AppStore } from "../../../core/store/app.store";
-import { AuthService } from "../../../features/auth/services/auth.service";
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ButtonModule } from 'primeng/button';
+import { MenuModule } from 'primeng/menu';
+import { DividerModule } from 'primeng/divider';
+import { MenuItem } from 'primeng/api';
+import { AppStore } from '@stores/app.store';
+import { AuthStore } from '@stores/auth.store';
 
 @Component({
-  selector: "app-navbar",
+  selector: 'app-navbar',
   standalone: true,
   imports: [
     CommonModule,
@@ -21,30 +21,31 @@ import { AuthService } from "../../../features/auth/services/auth.service";
     MenuModule,
     DividerModule,
   ],
-  templateUrl: "./navbar.component.html",
-  styleUrl: "./navbar.component.scss",
+  templateUrl: './navbar.component.html',
+  styleUrl: './navbar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent {
   public readonly appStore = inject(AppStore);
-  private readonly authService = inject(AuthService);
+  private readonly authStore = inject(AuthStore);
 
   public readonly menuItems: MenuItem[] = [
     {
-      label: "Ustawienia",
-      icon: "pi pi-cog",
-      routerLink: "/settings",
+      label: 'Ustawienia',
+      icon: 'pi pi-cog',
+      routerLink: '/settings',
     },
     {
       separator: true,
     },
     {
-      label: "Wyloguj",
-      icon: "pi pi-sign-out",
+      label: 'Wyloguj',
+      icon: 'pi pi-sign-out',
       command: () => this.logout(),
     },
   ];
 
   public logout(): void {
-    this.authService.logout();
+    this.authStore.logout();
   }
 }
