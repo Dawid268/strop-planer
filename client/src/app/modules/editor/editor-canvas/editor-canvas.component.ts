@@ -19,16 +19,17 @@ import { EditorStore } from "@stores/editor";
 import { CadService } from "@core/services/cad.service";
 import { FabricRendererService } from "@core/services/fabric-renderer.service";
 import { CustomFabricObject, rotatePoint } from "@utils/canvas.utils";
-import { mergeSegmentsToPolygon, Segment } from "@utils/geometry-healing.utils";
 import { CanvasDrawingService } from "@services/canvas-drawing.service";
 import { CanvasInteractionService } from "@services/canvas-interaction.service";
 import { CanvasSelectionService } from "@services/canvas-selection.service";
 import { CanvasStateService } from "@services/canvas-state.service";
 import { CanvasHistoryService } from "@services/canvas-history.service";
+import { CanvasKeyboardService } from "@services/canvas-keyboard.service";
+import { CanvasClipboardService } from "@services/canvas-clipboard.service";
+import { CanvasSlabDetectionService } from "@services/canvas-slab-detection.service";
 import { ViewportService } from "@services/viewport.service";
 import { CanvasEventHandlerService } from "@services/canvas-event-handler.service";
 import { CanvasShapeSyncService } from "@services/canvas-shape-sync.service";
-import type { EditorTool } from "@models/editor.models";
 import type { RawGeometry } from "@models/geometry.models";
 import {
   ContextToolbarComponent,
@@ -51,6 +52,9 @@ import {
     CanvasSelectionService,
     CanvasStateService,
     CanvasHistoryService,
+    CanvasKeyboardService,
+    CanvasClipboardService,
+    CanvasSlabDetectionService,
     ViewportService,
     CanvasEventHandlerService,
     CanvasShapeSyncService,
@@ -71,6 +75,9 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly interaction = inject(CanvasInteractionService);
   protected readonly state = inject(CanvasStateService);
   protected readonly history = inject(CanvasHistoryService);
+  private readonly keyboard = inject(CanvasKeyboardService);
+  private readonly clipboardService = inject(CanvasClipboardService);
+  private readonly slabDetection = inject(CanvasSlabDetectionService);
   protected readonly viewport = inject(ViewportService);
   protected readonly cadService = inject(CadService);
   protected readonly fabricRenderer = inject(FabricRendererService);
@@ -84,7 +91,6 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   private canvas: fabric.Canvas | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private gridLines: fabric.Line[] = [];
-  private clipboard: fabric.Object[] = [];
   private canvasInitialized = false;
   private hasAutoFitted = false;
 
@@ -338,51 +344,12 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   @HostListener("document:keydown", ["$event"])
-  onKeyDown(e: KeyboardEvent): void {
-    if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName))
-      return;
-    const key = e.key.toLowerCase(),
-      ctrl = e.ctrlKey || e.metaKey,
-      shift = e.shiftKey;
-
-    if (key === "delete" || key === "backspace") {
-      e.preventDefault();
-      this.deleteSelected();
-    } else if (key === "escape") {
-      this.drawing.clearDrawingPreviews(this.canvas!);
-      this.canvas?.discardActiveObject();
-      this.interaction.showContextToolbar.set(false);
-      this.store.setActiveTool("select");
-    } else if (key === "r" && !ctrl) {
-      e.preventDefault();
-      this.rotateSelected();
-    } else if (key === "c" && ctrl) {
-      e.preventDefault();
-      this.copySelected();
-    } else if (key === "v" && ctrl) {
-      e.preventDefault();
-      this.pasteSelected();
-    } else if (key === "a" && ctrl) {
-      e.preventDefault();
-      this.selectAll();
-    } else if (key === "z" && ctrl) {
-      e.preventDefault();
-      if (shift) {
-        this.history.redo(this.canvas);
-      } else {
-        this.history.undo(this.canvas);
-      }
-    } else if (["v", "h", "b", "m", "p", "s"].includes(key) && !ctrl) {
-      const tools: Record<string, EditorTool> = {
-        v: "select",
-        h: "pan",
-        b: "draw-beam",
-        m: "trace-slab",
-        p: "draw-polygon",
-        s: "add-prop",
-      };
-      this.store.setActiveTool(tools[key]);
-    }
+  public onKeyDown(e: KeyboardEvent): void {
+    this.keyboard.handleKeyDown(e, this.canvas, {
+      deleteSelected: () => this.deleteSelected(),
+      rotateSelected: () => this.rotateSelected(),
+      selectAll: () => this.selectAll(),
+    });
   }
 
   public generateFormworkForSelected(): void {
@@ -409,108 +376,17 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
     this.history.saveState(this.canvas);
   }
 
-  /**
-   * Automatic slab detection starting from a clicked point.
-   */
+  /** Automatic slab detection starting from a clicked point (delegated to service) */
   public autoDetectSlab(pointer: { x: number; y: number }): void {
-    if (!this.canvas) return;
-
-    // 1. Find the target line under the cursor
-    const targets = this.interaction.findObjectsAtPoint(
-      this.canvas,
-      pointer,
-    ) as CustomFabricObject[];
-    const startObj = targets.find(
-      (t) => t.customData?.type === "line" || t.type === "line",
-    );
-
-    if (!startObj) return;
-
-    // 2. Collect ALL lines on the canvas to find connections
-    const allObjects = this.canvas.getObjects() as CustomFabricObject[];
-    const allLines: Segment[] = [];
-
-    allObjects.forEach((obj) => {
-      const data = obj.customData;
-      if (data?.type === "line" && data.x1 !== undefined) {
-        allLines.push({
-          p1: { x: data.x1, y: data.y1! },
-          p2: { x: data.x2!, y: data.y2! },
-        });
-      } else if (obj.type === "line") {
-        const l = obj as fabric.Line;
-        allLines.push({
-          p1: { x: l.x1!, y: l.y1! },
-          p2: { x: l.x2!, y: l.y2! },
-        });
-      }
-    });
-
-    // 3. Use healing utility to find the enclosing contour
-    // For MVP, we use the simple merge logic starting from the clicked line
-    // In a more advanced version, we would use a graph-based cycle detection.
-    const points = mergeSegmentsToPolygon(allLines, 15);
-
-    if (points.length >= 3) {
-      this.store.createSlabFromPoints(points);
-      this.canvas.requestRenderAll();
-      this.history.saveState(this.canvas);
+    if (this.canvas) {
+      this.slabDetection.autoDetectSlab(this.canvas, pointer);
     }
   }
 
-  /**
-   * Converts selected CAD segments/lines into a single Slab polygon.
-   * Triggered from Context Toolbar.
-   */
+  /** Convert selected CAD segments into a slab polygon (delegated to service) */
   public convertSelectedToSlab(): void {
-    if (!this.canvas) return;
-
-    const selected = this.canvas.getActiveObjects() as CustomFabricObject[];
-    if (selected.length === 0) return;
-
-    const segments: Segment[] = [];
-    const storeShapeIdsToRemove: string[] = [];
-
-    selected.forEach((obj) => {
-      const data = obj.customData;
-
-      if (data?.type === "line" && data.x1 !== undefined) {
-        segments.push({
-          p1: { x: data.x1, y: data.y1! },
-          p2: { x: data.x2!, y: data.y2! },
-        });
-      } else if (obj.type === "line") {
-        const line = obj as fabric.Line;
-        segments.push({
-          p1: { x: line.x1!, y: line.y1! },
-          p2: { x: line.x2!, y: line.y2! },
-        });
-      }
-
-      if (data?.id && !data.isCadEntity) {
-        storeShapeIdsToRemove.push(data.id);
-      }
-    });
-
-    if (segments.length === 0) return;
-
-    const points = mergeSegmentsToPolygon(segments, 10);
-    if (points.length >= 3) {
-      this.store.createSlabFromPoints(points);
-
-      if (storeShapeIdsToRemove.length > 0) {
-        this.store.removeShapes(storeShapeIdsToRemove);
-      }
-
-      // Cleanup
-      selected.forEach((obj) => {
-        if (!obj.data?.isCadEntity) {
-          this.canvas!.remove(obj);
-        }
-      });
-      this.canvas.discardActiveObject();
-      this.canvas.requestRenderAll();
-      this.history.saveState(this.canvas);
+    if (this.canvas) {
+      this.slabDetection.convertSelectedToSlab(this.canvas);
     }
   }
 
@@ -523,25 +399,11 @@ export class EditorCanvasComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   public copySelected(): void {
-    this.clipboard = [];
-    this.canvas
-      ?.getActiveObjects()
-      .forEach((o: fabric.Object) =>
-        o.clone().then((c: fabric.Object) => this.clipboard.push(c)),
-      );
+    if (this.canvas) this.clipboardService.copy(this.canvas);
   }
 
   public pasteSelected(): void {
-    if (!this.canvas || this.clipboard.length === 0) return;
-    this.clipboard.forEach((o: fabric.Object, i: number) =>
-      o.clone().then((c: fabric.Object) => {
-        c.set({ left: (c.left || 0) + 20, top: (c.top || 0) + 20 });
-        (c as CustomFabricObject).customData = {
-          id: `pasted-${Date.now()}-${i}`,
-        };
-        this.canvas!.add(c);
-      }),
-    );
+    if (this.canvas) this.clipboardService.paste(this.canvas);
   }
 
   public lockSelected(): void {
