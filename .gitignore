@@ -26,6 +26,7 @@ coverage
 # NestJS / Backend
 upload_backups
 *.sqlite
+*.db
 data/*.db
 data/*.sqlite
 
